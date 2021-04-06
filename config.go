@@ -37,10 +37,22 @@ type Config struct {
 	location   *time.Location `yaml:"location"`
 }
 
+/*NewConfig 新建一个配置
+参数:
+返回值:
+*	*Config	*Config
+*/
 func NewConfig() *Config {
 	return &Config{}
 }
 
+/*NewConfigFromYamlData 从yaml数据中新建配置
+参数:
+*	yamlData	io.Reader   yaml数据 reader，不能为空
+返回值:
+*	config	*Config
+*	err   	error
+*/
 func NewConfigFromYamlData(yamlData io.Reader) (config *Config, err error) {
 	config = NewConfig()
 	if err = yaml.NewDecoder(yamlData).Decode(config); err != nil {
@@ -50,6 +62,12 @@ func NewConfigFromYamlData(yamlData io.Reader) (config *Config, err error) {
 	return config, nil
 }
 
+/*Build 构建日志器
+参数:
+返回值:
+*	logger	Logger  日志器
+*	err   	error   错误
+*/
 func (l *Config) Build() (logger Logger, err error) {
 	var (
 		underlyingLogger *zap.Logger
@@ -78,7 +96,7 @@ func (l *Config) Build() (logger Logger, err error) {
 
 	// todo: 如何验证一个time layout 是否正确
 
-	cfg.EncoderConfig = l.NewDevelopmentEncoderConfig()
+	cfg.EncoderConfig = l.newEncoderConfig()
 
 	if l.JSON {
 		encoder = zapcore.NewJSONEncoder(cfg.EncoderConfig)
@@ -109,7 +127,12 @@ func (l *Config) Build() (logger Logger, err error) {
 	return newLogger(underlyingLogger.With(zap.String(`系统`, l.Service)), ``, 1, true), nil
 }
 
-func (l *Config) NewDevelopmentEncoderConfig() zapcore.EncoderConfig {
+/*newEncoderConfig 新建编码器配置
+参数:
+返回值:
+*	zapcore.EncoderConfig	zapcore.EncoderConfig
+*/
+func (l *Config) newEncoderConfig() zapcore.EncoderConfig {
 	config := zapcore.EncoderConfig{
 		// Keys can be anything except the empty string.
 		TimeKey:       "T",
