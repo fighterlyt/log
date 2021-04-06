@@ -1,4 +1,4 @@
-module newgit.cg.xxx/go-slog/log
+module newgit.cg.xxx/go-log/log
 
 go 1.16
 
