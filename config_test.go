@@ -48,19 +48,10 @@ func TestConfig_Build(t *testing.T) {
 			Debug:   true,
 			// FilePath: `a`,
 		}
-		jsonCfg = &Config{
-			Service: "test",
-			Level:   zapcore.DebugLevel,
-			Debug:   true,
-			JSON:    true,
-		}
 	)
 
 	originLogger, err := cfg.Build()
 	require.NoError(t, err, `构建错误`)
-
-	originJSONLogger, err := jsonCfg.Build()
-	require.NoError(t, err, `构建JSON输出`)
 
 	// With 添加字段
 	originLogger = originLogger.With(zap.String(`a`, `x`), zap.String(`b`, "y"))
@@ -97,6 +88,20 @@ func TestConfig_Build(t *testing.T) {
 	taskLogger := debugLogger.Start()
 	taskLogger.Info(`开始`)
 
+}
+
+func TestJSON(t *testing.T) {
+	var (
+		jsonCfg = &Config{
+			Service: "test",
+			Level:   zapcore.DebugLevel,
+			Debug:   true,
+			JSON:    true,
+		}
+	)
+	originJSONLogger, err := jsonCfg.Build()
+	require.NoError(t, err, `构建JSON输出`)
+
 	// With 添加字段
 	originJSONLogger = originJSONLogger.With(zap.String(`a`, `x`), zap.String(`b`, "y"))
 	// Debug输出可见
@@ -131,4 +136,23 @@ func TestConfig_Build(t *testing.T) {
 
 	taskJSONLogger := debugJSONLogger.Start()
 	taskJSONLogger.Info(`开始`)
+}
+
+func TestLogger_AddCallerSkip(t *testing.T) {
+	var (
+		cfg = &Config{
+			Service: "test",
+			Level:   zapcore.DebugLevel,
+			Debug:   true,
+		}
+	)
+
+	originLogger, err := cfg.Build()
+	require.NoError(t, err, `构建错误`)
+
+	logger := originLogger.Derive(`a`)
+
+	logger.Info(`a`)
+	logger = logger.AddCallerSkip(1)
+	logger.Info(`a`)
 }

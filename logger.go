@@ -31,6 +31,7 @@ type Logger interface {
 	Start() Logger
 	// SetLevel 设置级别，可以调高或者调低
 	SetLevel(level zapcore.Level) Logger
+	AddCallerSkip(skip int) Logger
 }
 
 // logger 日志器的实现
@@ -120,4 +121,8 @@ func (l logger) SetLevel(level zapcore.Level) Logger {
 
 func (l *logger) Start() Logger {
 	return l.With(zap.String(`任务ID`, primitive.NewObjectID().Hex()))
+}
+
+func (l *logger) AddCallerSkip(skip int) Logger {
+	return newLogger(l.underlying, l.name, skip, false)
 }
