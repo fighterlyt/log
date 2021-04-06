@@ -33,6 +33,7 @@ type Config struct {
 	TimeZone   string         `yaml:"timeZone"`   // 时区，默认defaultTimeZone,可以从https://www.zeitverschiebung.net/en/ 查询时区信息
 	TimeLayout string         `yaml:"timeLayout"` // 输出时间格式,默认为defaultTimeLayout,任何Go支持的格式都是合法的
 	Debug      bool           `yaml:"debug"`      // 是否调试，调试模式会输出完整的代码行信息,其他模式只会输出项目内部的代码行信息
+	JSON       bool           `yaml:"json"`       // 是否输出为一个完整的json,默认为false
 	location   *time.Location `yaml:"location"`
 }
 
@@ -79,7 +80,11 @@ func (l *Config) Build() (logger Logger, err error) {
 
 	cfg.EncoderConfig = l.NewDevelopmentEncoderConfig()
 
-	encoder = zapcore.NewConsoleEncoder(cfg.EncoderConfig)
+	if l.JSON {
+		encoder = zapcore.NewJSONEncoder(cfg.EncoderConfig)
+	} else {
+		encoder = zapcore.NewConsoleEncoder(cfg.EncoderConfig)
+	}
 
 	if l.FilePath != `` {
 		w = zapcore.NewMultiWriteSyncer(zapcore.AddSync(&lumberjack.Logger{

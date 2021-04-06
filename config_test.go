@@ -48,10 +48,19 @@ func TestConfig_Build(t *testing.T) {
 			Debug:   true,
 			// FilePath: `a`,
 		}
+		jsonCfg = &Config{
+			Service: "test",
+			Level:   zapcore.DebugLevel,
+			Debug:   true,
+			JSON:    true,
+		}
 	)
 
 	originLogger, err := cfg.Build()
 	require.NoError(t, err, `构建错误`)
+
+	originJSONLogger, err := jsonCfg.Build()
+	require.NoError(t, err, `构建JSON输出`)
 
 	// With 添加字段
 	originLogger = originLogger.With(zap.String(`a`, `x`), zap.String(`b`, "y"))
@@ -87,4 +96,39 @@ func TestConfig_Build(t *testing.T) {
 
 	taskLogger := debugLogger.Start()
 	taskLogger.Info(`开始`)
+
+	// With 添加字段
+	originJSONLogger = originJSONLogger.With(zap.String(`a`, `x`), zap.String(`b`, "y"))
+	// Debug输出可见
+	originJSONLogger.Debug(`a`)
+
+	// 验证日志器
+	infoJSONLogger := originJSONLogger.Derive(`提现`)
+	// Debug 可见
+	infoJSONLogger.Debug(`debug1`)
+	// 设置为Info
+	infoJSONLogger = infoJSONLogger.SetLevel(zapcore.InfoLevel)
+	// Debug 不可见
+	infoJSONLogger.Debug(`debug2`)
+	// Debug 可见
+	originJSONLogger.Debug(`origin Debug`)
+	// Info 可见
+	infoJSONLogger.Info(`infoJSONLogger.Info`)
+	// Warn 可见
+	infoJSONLogger.Warn(`infoJSONLogger.Warn`)
+
+	infoJSONLogger = infoJSONLogger.With(zap.String(`info`, `info`))
+
+	infoJSONLogger.Info(`infoJSONLogger.Info`)
+	// 再次衍生
+	debugJSONLogger := infoJSONLogger.Derive(`汇总`)
+	// Debug不可见
+	debugJSONLogger.Debug(`debug1`)
+	// 设置为Debug
+	debugJSONLogger = debugJSONLogger.SetLevel(zapcore.DebugLevel)
+	// Debug可见
+	debugJSONLogger.Debug(`debug2`)
+
+	taskJSONLogger := debugJSONLogger.Start()
+	taskJSONLogger.Info(`开始`)
 }

@@ -6,6 +6,7 @@
 |   版本  |   修改时间    |   修改人 |   修改内容 |
 | --- | --- | --- | --- |
 |   |    |  |   |
+|   v0.2 |  2021-04-06 10:34:42 | everest    | 添加一个配置项，[JSON](#config),允许将整个日志作为JSON输出，配合grayLog |
 |   v0.1  |   2021-04-02 20:39 |  everest    |   初步完成|
 
 # 详述
@@ -20,7 +21,7 @@
 - [x] 使用结构化的输出，而不是fmt格式
 - [x] 携带代码行数，方便定位
     - [x] 开发环境展示完整路径,可点击
-    - [x] 线上环境展示相对零
+    - [x] 线上环境展示相对路径
 
 
 ## 概念
@@ -165,13 +166,13 @@ sequenceDiagram
     log->>client: config *Config
     client->>log: 构建<br>config.Build
     log->>client: Logger
-    client->>log: Dervice
+    client->>log: Derive
     log ->> client: 新Logger
     client->>log: With
     log ->> client:新Logger
 ```
 
-### 配置
+### <span id="config">配置 </span>
 
 ```yaml
 service: test   # 服务名称
@@ -180,6 +181,7 @@ filePath: "a"   # 日志路径, 本地文件路径,如果为空，表示不输�
 timeZone: "b"   # 时区，默认defaultTimeZone,可以从https://www.zeitverschiebung.net/en/ 查询时区信息
 timeLayout: "c" # 输出时间格式,默认为defaultTimeLayout,任何Go支持的格式都是合法的
 debug: true     # 是否调试，调试模式会输出完整的代码行信息,其他模式只会输出项目内部的代码行信息
+json: true      # 是否作为完整JSON输出,0.2版本添加
 ```
 
 ### 示例
