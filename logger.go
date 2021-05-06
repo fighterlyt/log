@@ -56,7 +56,9 @@ func newLogger(underlying *zap.Logger, name string, skip int, setName bool, fiel
 		result.underlying = result.underlying.Named(name)
 	}
 
-	result.underlying = result.underlying.WithOptions(zap.AddCallerSkip(skip))
+	if skip >= 0 {
+		result.underlying = result.underlying.WithOptions(zap.AddCallerSkip(skip))
+	}
 
 	return result
 }
@@ -69,12 +71,12 @@ func (l *logger) Derive(s string) Logger {
 		names = append(names, l.name, s)
 	}
 
-	return newLogger(l.underlying, strings.Join(names, "."), 0, true, l.fields...)
+	return newLogger(l.underlying, strings.Join(names, "."), -1, true, l.fields...)
 }
 
 func (l logger) With(fields ...zap.Field) Logger {
 	fields = append(l.fields, fields...)
-	return newLogger(l.underlying.With(fields...), l.name, 0, false, fields...)
+	return newLogger(l.underlying.With(fields...), l.name, -1, false, fields...)
 }
 
 func (l logger) Info(msg string, fields ...zap.Field) {
@@ -118,7 +120,7 @@ func (l logger) SetLevel(level zapcore.Level) Logger {
 	logger := zap.New(core).With(l.fields...)
 	logger = logger.WithOptions(zap.AddCaller())
 
-	return newLogger(logger, l.name, 1, true, l.fields...)
+	return newLogger(logger, l.name, -1, true, l.fields...)
 }
 
 func (l *logger) Start() Logger {
