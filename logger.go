@@ -39,6 +39,7 @@ type logger struct {
 	underlying *zap.Logger     // 底层日志器
 	fields     []zapcore.Field // 嵌套的字段
 	name       string          // 对应的名称
+	skip       int             // skip
 }
 
 /*newLogger 生成一个日志器
@@ -58,6 +59,7 @@ func newLogger(underlying *zap.Logger, name string, skip int, setName bool, fiel
 
 	if skip >= 0 {
 		result.underlying = result.underlying.WithOptions(zap.AddCallerSkip(skip))
+		result.skip = skip
 	}
 
 	return result
@@ -120,7 +122,7 @@ func (l logger) SetLevel(level zapcore.Level) Logger {
 	logger := zap.New(core).With(l.fields...)
 	logger = logger.WithOptions(zap.AddCaller())
 
-	return newLogger(logger, l.name, -1, true, l.fields...)
+	return newLogger(logger, l.name, l.skip, true, l.fields...)
 }
 
 func (l *logger) Start() Logger {
