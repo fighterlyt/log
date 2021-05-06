@@ -54,9 +54,7 @@ func newLogger(underlying *zap.Logger, name string, skip int, setName bool, fiel
 		underlying = underlying.Named(name)
 	}
 
-	underlying = underlying.WithOptions(zap.AddCallerSkip(skip))
-
-	return &logger{underlying: underlying, name: name, fields: fields}
+	return &logger{underlying: underlying.WithOptions(zap.AddCallerSkip(skip)), name: name, fields: fields}
 }
 
 func (l *logger) Derive(s string) Logger {
