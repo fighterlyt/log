@@ -50,11 +50,15 @@ type logger struct {
 *	*logger	*logger
 */
 func newLogger(underlying *zap.Logger, name string, skip int, setName bool, fields ...zapcore.Field) *logger {
+	result := &logger{underlying: underlying, name: name, fields: fields}
+
 	if setName {
-		underlying = underlying.Named(name)
+		result.underlying = result.underlying.Named(name)
 	}
 
-	return &logger{underlying: underlying.WithOptions(zap.AddCallerSkip(skip)), name: name, fields: fields}
+	result.underlying = result.underlying.WithOptions(zap.AddCallerSkip(skip))
+
+	return result
 }
 
 func (l *logger) Derive(s string) Logger {

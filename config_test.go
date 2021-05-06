@@ -153,6 +153,6 @@ func TestLogger_AddCallerSkip(t *testing.T) {
 	logger := originLogger.Derive(`a`)
 
 	logger.Info(`a`)
-	logger = logger.AddCallerSkip(1)
+	logger = logger.AddCallerSkip(0)
 	logger.Info(`a`)
 }
