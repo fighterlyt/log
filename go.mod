@@ -1,5 +1,4 @@
-module newgit.cg.xxx/go-log/log
-
+module github.com/fighterlyt/log
 go 1.16
 
 require (
