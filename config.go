@@ -131,11 +131,12 @@ func (l *Config) Build() (logger Logger, err error) {
 	return newLogger(underlyingLogger.With(zap.String(`系统`, l.Service)), ``, 1, true), nil
 }
 
-func NewEasyLogger(debug, hideConsole bool, filePath string) (Logger, error) {
+func NewEasyLogger(debug, hideConsole bool, filePath, service string) (Logger, error) {
 	config := NewConfig()
 	config.Debug = debug
 	config.FilePath = filePath
 	config.HideConsole = hideConsole
+	config.Service = service
 
 	return config.Build()
 }
