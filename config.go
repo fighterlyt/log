@@ -157,7 +157,7 @@ func (l *Config) newEncoderConfig() zapcore.EncoderConfig {
 		MessageKey:    "M",
 		StacktraceKey: "S",
 		LineEnding:    zapcore.DefaultLineEnding,
-		EncodeLevel:   zapcore.CapitalLevelEncoder,
+		EncodeLevel:   zapcore.CapitalColorLevelEncoder,
 		EncodeTime: func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 			enc.AppendString(t.In(l.location).Format(l.TimeLayout))
 		},
