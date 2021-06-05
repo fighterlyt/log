@@ -145,7 +145,11 @@ func (l *Config) Build() (logger Logger, err error) {
 			encoder,
 			w,
 			cfg.Level,
-		), zapcore.NewCore(encoder, os.Stdout, cfg.Level))
+		))
+
+		if !l.HideConsole {
+			allCores = append(allCores, zapcore.NewCore(encoder, os.Stdout, cfg.Level))
+		}
 	} else if !l.HideConsole {
 		allCores = append(allCores, zapcore.NewCore(encoder, os.Stdout, cfg.Level))
 	}
