@@ -138,6 +138,17 @@ func TestJSON(t *testing.T) {
 	taskJSONLogger.Info(`开始`)
 }
 
+func TestLogger_SetLevel(t *testing.T) {
+	testLogger, _ := NewEasyLogger(true, false, ``, `test`)
+	testLogger = testLogger.SetLevel(zapcore.WarnLevel)
+	testLogger.Info(`info`)
+	testLogger.Warn(`warn`)
+
+	testLogger = testLogger.Derive(`a`)
+	testLogger.Info(`info`)
+	testLogger.Warn(`warn`)
+}
+
 func TestLogger_AddCallerSkip(t *testing.T) {
 	var (
 		cfg = &Config{

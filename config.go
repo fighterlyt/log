@@ -16,7 +16,10 @@ const (
 	// defaultTimeZone 默认时区
 	defaultTimeZone = `Asia/Shanghai`
 	// defaultTimeLayout 默认时间格式
-	defaultTimeLayout = `2006-01-02 15:04:05.000`
+	defaultTimeLayout       = `2006-01-02 15:04:05.000`
+	defaultRotateMaxSize    = 100
+	defaultRotateMaxBackups = 50
+	defaultRotateMaxAge     = 7
 )
 
 var (
@@ -24,6 +27,13 @@ var (
 	encoder zapcore.Encoder
 	w       zapcore.WriteSyncer
 )
+
+// RotateConfig rotate 配置
+type RotateConfig struct {
+	MaxSize    int // 单个日志文件最大大小，单位为MB
+	MaxBackups int // 最大部分数量
+	MaxAge     int // 最大保留时间,单位为天
+}
 
 // Config 日志器配置
 type Config struct {
@@ -35,6 +45,7 @@ type Config struct {
 	Debug       bool           `yaml:"debug"`       // 是否调试，调试模式会输出完整的代码行信息,其他模式只会输出项目内部的代码行信息
 	JSON        bool           `yaml:"json"`        // 是否输出为一个完整的json,默认为false
 	HideConsole bool           `yaml:"hideConsole"` // 是否隐藏终端输出
+	Rotate      RotateConfig   `yaml:"rotate"`      // 日志 rotate
 	location    *time.Location `yaml:"location"`
 }
 
@@ -107,22 +118,36 @@ func (l *Config) Build() (logger Logger, err error) {
 
 	if l.FilePath != `` {
 		l.HideConsole = false
-		w = zapcore.NewMultiWriteSyncer(zapcore.AddSync(&lumberjack.Logger{
+
+		lumberjackLogger := &lumberjack.Logger{
 			Filename:   l.FilePath + ".log",
-			MaxSize:    500, // megabytes
-			MaxBackups: 3,
-			MaxAge:     28, // days
-		}))
+			MaxSize:    l.Rotate.MaxSize, // megabytes
+			MaxBackups: l.Rotate.MaxBackups,
+			MaxAge:     l.Rotate.MaxAge, // days
+			Compress:   true,
+		}
+
+		if lumberjackLogger.MaxSize == 0 {
+			lumberjackLogger.MaxSize = defaultRotateMaxSize
+		}
+
+		if lumberjackLogger.MaxAge == 0 {
+			lumberjackLogger.MaxAge = defaultRotateMaxAge
+		}
+
+		if lumberjackLogger.MaxBackups == 0 {
+			lumberjackLogger.MaxBackups = defaultRotateMaxBackups
+		}
+
+		w = zapcore.NewMultiWriteSyncer(zapcore.AddSync(lumberjackLogger))
 
 		allCores = append(allCores, zapcore.NewCore(
 			encoder,
 			w,
 			cfg.Level,
 		), zapcore.NewCore(encoder, os.Stdout, cfg.Level))
-	} else {
-		if !l.HideConsole {
-			allCores = append(allCores, zapcore.NewCore(encoder, os.Stdout, cfg.Level))
-		}
+	} else if !l.HideConsole {
+		allCores = append(allCores, zapcore.NewCore(encoder, os.Stdout, cfg.Level))
 	}
 
 	core = zapcore.NewTee(allCores...)
