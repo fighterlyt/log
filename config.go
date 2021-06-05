@@ -117,8 +117,6 @@ func (l *Config) Build() (logger Logger, err error) {
 	}
 
 	if l.FilePath != `` {
-		l.HideConsole = false
-
 		lumberjackLogger := &lumberjack.Logger{
 			Filename:   l.FilePath + ".log",
 			MaxSize:    l.Rotate.MaxSize, // megabytes
