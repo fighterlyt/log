@@ -43,6 +43,7 @@ type Config struct {
 	TimeZone    string         `yaml:"timeZone"`    // 时区，默认defaultTimeZone,可以从https://www.zeitverschiebung.net/en/ 查询时区信息
 	TimeLayout  string         `yaml:"timeLayout"`  // 输出时间格式,默认为defaultTimeLayout,任何Go支持的格式都是合法的
 	Debug       bool           `yaml:"debug"`       // 是否调试，调试模式会输出完整的代码行信息,其他模式只会输出项目内部的代码行信息
+	Dev         bool           `yaml:"dev"`         // 开发模式，输出完整路径
 	JSON        bool           `yaml:"json"`        // 是否输出为一个完整的json,默认为false
 	HideConsole bool           `yaml:"hideConsole"` // 是否隐藏终端输出
 	Rotate      RotateConfig   `yaml:"rotate"`      // 日志 rotate
@@ -191,11 +192,11 @@ func (l *Config) newEncoderConfig() zapcore.EncoderConfig {
 			enc.AppendString(t.In(l.location).Format(l.TimeLayout))
 		},
 		EncodeDuration: zapcore.StringDurationEncoder,
-		EncodeCaller:   zapcore.FullCallerEncoder,
+		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
 
-	if !l.Debug {
-		config.EncodeCaller = zapcore.ShortCallerEncoder
+	if l.Dev {
+		config.EncodeCaller = zapcore.FullCallerEncoder
 	}
 
 	return config
