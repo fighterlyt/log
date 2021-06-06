@@ -87,7 +87,6 @@ func TestConfig_Build(t *testing.T) {
 
 	taskLogger := debugLogger.Start()
 	taskLogger.Info(`开始`)
-
 }
 
 func TestJSON(t *testing.T) {
@@ -99,7 +98,9 @@ func TestJSON(t *testing.T) {
 			JSON:    true,
 		}
 	)
+
 	originJSONLogger, err := jsonCfg.Build()
+
 	require.NoError(t, err, `构建JSON输出`)
 
 	// With 添加字段

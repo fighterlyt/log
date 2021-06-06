@@ -80,7 +80,7 @@ func NewConfigFromYamlData(yamlData io.Reader) (config *Config, err error) {
 *	logger	Logger  日志器
 *	err   	error   错误
 */
-func (l *Config) Build() (logger Logger, err error) {
+func (l *Config) Build(cores ...zapcore.Core) (logger Logger, err error) {
 	var (
 		underlyingLogger *zap.Logger
 		allCores         []zapcore.Core
@@ -151,6 +151,8 @@ func (l *Config) Build() (logger Logger, err error) {
 	} else if !l.HideConsole {
 		allCores = append(allCores, zapcore.NewCore(encoder, os.Stdout, cfg.Level))
 	}
+
+	allCores = append(allCores, cores...)
 
 	core = zapcore.NewTee(allCores...)
 	underlyingLogger = zap.New(core, zap.AddCaller())
