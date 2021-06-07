@@ -23,9 +23,11 @@ const (
 )
 
 var (
-	core    zapcore.Core
-	encoder zapcore.Encoder
-	w       zapcore.WriteSyncer
+	core        zapcore.Core
+	encoder     zapcore.Encoder
+	writeSyncer zapcore.WriteSyncer
+	stdoutCore  zapcore.Core
+	inputCores  []zapcore.Core
 )
 
 // RotateConfig rotate 配置
@@ -87,6 +89,8 @@ func (l *Config) Build(cores ...zapcore.Core) (logger Logger, err error) {
 		allCores         []zapcore.Core
 	)
 
+	inputCores = cores
+
 	cfg := &zap.Config{
 		Level:            zap.NewAtomicLevelAt(l.Level),
 		Development:      true,
@@ -138,19 +142,22 @@ func (l *Config) Build(cores ...zapcore.Core) (logger Logger, err error) {
 			lumberjackLogger.MaxBackups = defaultRotateMaxBackups
 		}
 
-		w = zapcore.NewMultiWriteSyncer(zapcore.AddSync(lumberjackLogger))
+		writeSyncer = zapcore.NewMultiWriteSyncer(zapcore.AddSync(lumberjackLogger))
 
 		allCores = append(allCores, zapcore.NewCore(
 			encoder,
-			w,
+			writeSyncer,
 			cfg.Level,
 		))
 
-		if !l.HideConsole {
-			allCores = append(allCores, zapcore.NewCore(encoder, os.Stdout, cfg.Level))
-		}
-	} else if !l.HideConsole {
-		allCores = append(allCores, zapcore.NewCore(encoder, os.Stdout, cfg.Level))
+	}
+
+	if !l.HideConsole {
+		stdoutCore = zapcore.NewCore(encoder, os.Stdout, cfg.Level)
+	}
+
+	if stdoutCore != nil {
+		allCores = append(allCores, stdoutCore)
 	}
 
 	allCores = append(allCores, cores...)

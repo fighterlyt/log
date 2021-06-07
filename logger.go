@@ -1,7 +1,6 @@
 package log
 
 import (
-	"os"
 	"strings"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -107,15 +106,23 @@ func (l logger) Panic(msg string, fields ...zap.Field) {
 
 func (l logger) SetLevel(level zapcore.Level) Logger {
 	var allCore []zapcore.Core
-	if w != nil {
+	if writeSyncer != nil {
 		allCore = append(allCore, zapcore.NewCore(
 			encoder,
-			w,
+			writeSyncer,
 			level,
 		))
 	}
 
-	allCore = append(allCore, zapcore.NewCore(encoder, os.Stdout, level))
+	for _, inputCore := range inputCores {
+		if inputCore != nil {
+			allCore = append(allCore, inputCore)
+		}
+	}
+
+	if stdoutCore != nil {
+		allCore = append(allCore, stdoutCore)
+	}
 
 	core = zapcore.NewTee(allCore...)
 
