@@ -23,11 +23,12 @@ const (
 )
 
 var (
-	core        zapcore.Core
-	encoder     zapcore.Encoder
-	writeSyncer zapcore.WriteSyncer
-	stdoutCore  zapcore.Core
-	inputCores  []zapcore.Core
+	core          zapcore.Core
+	encoder       zapcore.Encoder
+	writeSyncer   zapcore.WriteSyncer
+	stdoutCore    zapcore.Core
+	inputCores    []zapcore.Core
+	HiddenConsole bool
 )
 
 // RotateConfig rotate 配置
@@ -89,6 +90,7 @@ func (l *Config) Build(cores ...zapcore.Core) (logger Logger, err error) {
 		allCores         []zapcore.Core
 	)
 
+	HiddenConsole = l.HideConsole
 	inputCores = cores
 
 	cfg := &zap.Config{
@@ -149,15 +151,10 @@ func (l *Config) Build(cores ...zapcore.Core) (logger Logger, err error) {
 			writeSyncer,
 			cfg.Level,
 		))
-
 	}
 
 	if !l.HideConsole {
-		stdoutCore = zapcore.NewCore(encoder, os.Stdout, cfg.Level)
-	}
-
-	if stdoutCore != nil {
-		allCores = append(allCores, stdoutCore)
+		allCores = append(allCores, zapcore.NewCore(encoder, os.Stdout, cfg.Level))
 	}
 
 	allCores = append(allCores, cores...)

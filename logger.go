@@ -1,6 +1,7 @@
 package log
 
 import (
+	"os"
 	"strings"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -120,8 +121,8 @@ func (l logger) SetLevel(level zapcore.Level) Logger {
 		}
 	}
 
-	if stdoutCore != nil {
-		allCore = append(allCore, stdoutCore)
+	if !HiddenConsole {
+		allCore = append(allCore, zapcore.NewCore(encoder, os.Stdout, level))
 	}
 
 	core = zapcore.NewTee(allCore...)
