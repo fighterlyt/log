@@ -175,3 +175,17 @@ func TestLogger_AddCallerSkip(t *testing.T) {
 	logger = logger.AddCallerSkip(0)
 	logger.Info(`a`)
 }
+
+func TestLogger_Start(t *testing.T) {
+	testLogger, _ := NewEasyLogger(true, false, ``, `test`)
+
+	testLogger = testLogger.With(zap.String(`key`, `b`))
+
+	logger := testLogger.Start()
+
+	logger.Info(`a`)
+
+	logger = logger.With(zap.String(`key`, `a`))
+
+	logger.Info(`a`)
+}

@@ -77,7 +77,8 @@ func (l *logger) Derive(s string) Logger {
 }
 
 func (l logger) With(fields ...zap.Field) Logger {
-	return newLogger(l.underlying, l.name, -1, false, fields...)
+	fields = append(l.fields, fields...)
+	return newLogger(l.underlying.With(fields...), l.name, -1, false)
 }
 
 func (l logger) Info(msg string, fields ...zap.Field) {
