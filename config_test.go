@@ -17,6 +17,8 @@ filePath: "a"   # 日志路径, 本地文件路径,如果为空，表示不输�
 timeZone: "b"   # 时区，默认defaultTimeZone,可以从https://www.zeitverschiebung.net/en/ 查询时区信息
 timeLayout: "c" # 输出时间格式,默认为defaultTimeLayout,任何Go支持的格式都是合法的
 debug: true     # 是否调试，调试模式会输出完整的代码行信息,其他模式只会输出项目内部的
+rotate:
+  maxSize: 200
 `
 
 	var (
@@ -28,6 +30,11 @@ debug: true     # 是否调试，调试模式会输出完整的代码行信息,�
 			TimeZone:   "b",
 			TimeLayout: "c",
 			Debug:      true,
+			Rotate: &RotateConfig{
+				MaxSize:    200,
+				MaxBackups: 0,
+				MaxAge:     0,
+			},
 		}
 		err error
 	)

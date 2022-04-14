@@ -33,9 +33,9 @@ var (
 
 // RotateConfig rotate 配置
 type RotateConfig struct {
-	MaxSize    int // 单个日志文件最大大小，单位为MB
-	MaxBackups int // 最大部分数量
-	MaxAge     int // 最大保留时间,单位为天
+	MaxSize    int `yaml:"maxSize"`    // 单个日志文件最大大小，单位为MB
+	MaxBackups int `yaml:"maxBackups"` // 最大部分数量
+	MaxAge     int `yaml:"maxAge"`     // 最大保留时间,单位为天
 }
 
 // Config 日志器配置
@@ -49,7 +49,7 @@ type Config struct {
 	Dev         bool           `yaml:"dev"`         // 开发模式，输出完整路径
 	JSON        bool           `yaml:"json"`        // 是否输出为一个完整的json,默认为false
 	HideConsole bool           `yaml:"hideConsole"` // 是否隐藏终端输出
-	Rotate      RotateConfig   `yaml:"rotate"`      // 日志 rotate
+	Rotate      *RotateConfig  `yaml:"rotate"`      // 日志 rotate
 	location    *time.Location `yaml:"location"`
 }
 
