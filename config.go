@@ -109,9 +109,9 @@ func (l *Config) Build(cores ...zapcore.Core) (logger Logger, err error) {
 		l.TimeLayout = defaultTimeLayout
 	}
 
-	// if l.location, err = time.LoadLocation(l.TimeZone); err != nil {
-	// 	return nil, errors.Wrapf(err, `加载时区[%s]`, l.TimeZone)
-	// }
+	if l.location, err = time.LoadLocation(l.TimeZone); err != nil {
+		return nil, errors.Wrapf(err, `加载时区[%s]`, l.TimeZone)
+	}
 
 	// todo: 如何验证一个time layout 是否正确
 
