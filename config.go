@@ -5,6 +5,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/pelletier/go-toml/v2"
+
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -26,7 +28,6 @@ var (
 	core          zapcore.Core
 	encoder       zapcore.Encoder
 	writeSyncer   zapcore.WriteSyncer
-	stdoutCore    zapcore.Core
 	inputCores    []zapcore.Core
 	HiddenConsole bool
 )
@@ -53,7 +54,8 @@ type Config struct {
 	location    *time.Location `yaml:"location"`
 }
 
-/*NewConfig 新建一个配置
+/*
+NewConfig 新建一个配置
 参数:
 返回值:
 *	*Config	*Config
@@ -62,7 +64,8 @@ func NewConfig() *Config {
 	return &Config{}
 }
 
-/*NewConfigFromYamlData 从yaml数据中新建配置
+/*
+NewConfigFromYamlData 从yaml数据中新建配置
 参数:
 *	yamlData	io.Reader   yaml数据 reader，不能为空
 返回值:
@@ -78,7 +81,25 @@ func NewConfigFromYamlData(yamlData io.Reader) (config *Config, err error) {
 	return config, nil
 }
 
-/*Build 构建日志器
+/*
+NewConfigFromToml 从toml配置中构建
+参数:
+*	tomlData	[]byte 	参数1
+返回值:
+*	config  	*Config	返回值1
+*	err     	error  	返回值2
+*/
+func NewConfigFromToml(tomlData []byte) (config *Config, err error) {
+	config = NewConfig()
+	if err = toml.Unmarshal(tomlData, config); err != nil {
+		return nil, errors.Wrap(err, `解析错误`)
+	}
+
+	return config, nil
+}
+
+/*
+Build 构建日志器
 参数:
 返回值:
 *	logger	Logger  日志器
@@ -132,17 +153,7 @@ func (l *Config) Build(cores ...zapcore.Core) (logger Logger, err error) {
 			Compress:   true,
 		}
 
-		if lumberjackLogger.MaxSize == 0 {
-			lumberjackLogger.MaxSize = defaultRotateMaxSize
-		}
-
-		if lumberjackLogger.MaxAge == 0 {
-			lumberjackLogger.MaxAge = defaultRotateMaxAge
-		}
-
-		if lumberjackLogger.MaxBackups == 0 {
-			lumberjackLogger.MaxBackups = defaultRotateMaxBackups
-		}
+		fillLumberjack(lumberjackLogger)
 
 		writeSyncer = zapcore.NewMultiWriteSyncer(zapcore.AddSync(lumberjackLogger))
 
@@ -175,7 +186,8 @@ func NewEasyLogger(debug, hideConsole bool, filePath, service string) (Logger, e
 	return config.Build()
 }
 
-/*newEncoderConfig 新建编码器配置
+/*
+newEncoderConfig 新建编码器配置
 参数:
 返回值:
 *	zapcore.EncoderConfig	zapcore.EncoderConfig
@@ -204,4 +216,18 @@ func (l *Config) newEncoderConfig() zapcore.EncoderConfig {
 	}
 
 	return config
+}
+
+func fillLumberjack(lumberjackLogger *lumberjack.Logger) {
+	if lumberjackLogger.MaxSize == 0 {
+		lumberjackLogger.MaxSize = defaultRotateMaxSize
+	}
+
+	if lumberjackLogger.MaxAge == 0 {
+		lumberjackLogger.MaxAge = defaultRotateMaxAge
+	}
+
+	if lumberjackLogger.MaxBackups == 0 {
+		lumberjackLogger.MaxBackups = defaultRotateMaxBackups
+	}
 }

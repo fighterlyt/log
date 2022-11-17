@@ -27,7 +27,7 @@ type Logger interface {
 	Fatal(msg string, fields ...zap.Field)
 	// Panic 输出日志到Panic 级别
 	Panic(msg string, fields ...zap.Field)
-	// Start() 返回一个携带任务ID字段的日志器
+	// Start 返回一个携带任务ID字段的日志器
 	Start() Logger
 	// SetLevel 设置级别，可以调高或者调低
 	SetLevel(level zapcore.Level) Logger
@@ -42,7 +42,8 @@ type logger struct {
 	skip       int             // skip
 }
 
-/*newLogger 生成一个日志器
+/*
+newLogger 生成一个日志器
 参数:
 *	underlying	*zap.Logger         底层日志器
 *	name      	string              对应的名称
@@ -65,6 +66,13 @@ func newLogger(underlying *zap.Logger, name string, skip int, setName bool, fiel
 	return result
 }
 
+/*
+Derive 衍生出一个新的子日志器
+参数:
+*	s     	string	名称
+返回值:
+*	Logger	Logger	日志器
+*/
 func (l *logger) Derive(s string) Logger {
 	var names []string
 	if l.name == `` {

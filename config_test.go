@@ -4,6 +4,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/pelletier/go-toml/v2"
+	"github.com/spf13/viper"
+
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -188,4 +191,77 @@ func TestLogger_Start(t *testing.T) {
 	logger = logger.With(zap.String(`key`, `a`))
 
 	logger.Info(`a`)
+}
+
+func TestViper(t *testing.T) {
+	data := `[conf]
+service =  "test"   # 服务名称
+level =  "debug"    # 日志级别，分别为debug,info,warn,error,fatal,panic
+filePath =  "a"   # 日志路径, 本地文件路径,如果为空，表示不输出到文件
+timeZone =  "b"   # 时区，默认defaultTimeZone,可以从https = //www.zeitverschiebung.net/en/ 查询时区信息
+timeLayout =  "c" # 输出时间格式,默认为defaultTimeLayout,任何Go支持的格式都是合法的
+debug =  true     # 是否调试，调试模式会输出完整的代码行信息,其他模式只会输出项目内部的
+rotate.maxSize =  200`
+	viperCfg := viper.New()
+	viperCfg.SetConfigType(`toml`)
+	require.NoError(t, viperCfg.ReadConfig(strings.NewReader(data)), `读取`)
+
+	require.EqualValues(t, `test`, viperCfg.GetString(`conf.service`))
+
+	marshaledData, err := toml.Marshal(viperCfg.Get(`conf`))
+
+	require.NoError(t, err)
+	t.Log(string(marshaledData))
+
+	var (
+		cfg     = &Config{}
+		wantCfg = &Config{
+			Service:    "test",
+			Level:      zapcore.DebugLevel,
+			FilePath:   "a",
+			TimeZone:   "b",
+			TimeLayout: "c",
+			Debug:      true,
+			Rotate: &RotateConfig{
+				MaxSize:    200,
+				MaxBackups: 0,
+				MaxAge:     0,
+			},
+		}
+	)
+
+	require.NoError(t, toml.Unmarshal(marshaledData, cfg))
+	require.EqualValues(t, wantCfg, cfg)
+}
+
+func TestNewConfigFromToml(t *testing.T) {
+	data := `
+service =  "test"   # 服务名称
+level =  "debug"    # 日志级别，分别为debug,info,warn,error,fatal,panic
+filePath =  "a"   # 日志路径, 本地文件路径,如果为空，表示不输出到文件
+timeZone =  "b"   # 时区，默认defaultTimeZone,可以从https = //www.zeitverschiebung.net/en/ 查询时区信息
+timeLayout =  "c" # 输出时间格式,默认为defaultTimeLayout,任何Go支持的格式都是合法的
+debug =  true     # 是否调试，调试模式会输出完整的代码行信息,其他模式只会输出项目内部的
+rotate.maxSize =  200`
+	var (
+		cfg     = &Config{}
+		wantCfg = &Config{
+			Service:    "test",
+			Level:      zapcore.DebugLevel,
+			FilePath:   "a",
+			TimeZone:   "b",
+			TimeLayout: "c",
+			Debug:      true,
+			Rotate: &RotateConfig{
+				MaxSize:    200,
+				MaxBackups: 0,
+				MaxAge:     0,
+			},
+		}
+		err error
+	)
+
+	cfg, err = NewConfigFromToml([]byte(data))
+	require.NoError(t, err, `读取`)
+	require.EqualValues(t, wantCfg, cfg)
 }
