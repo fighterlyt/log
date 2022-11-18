@@ -3,11 +3,13 @@ package log
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/pelletier/go-toml/v2"
 	"github.com/spf13/viper"
 
 	"github.com/stretchr/testify/require"
+	remote "gitlab.com/ppub/viper-nacos"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -264,4 +266,93 @@ rotate.maxSize =  200`
 	cfg, err = NewConfigFromToml([]byte(data))
 	require.NoError(t, err, `读取`)
 	require.EqualValues(t, wantCfg, cfg)
+}
+
+func TestNacos(t *testing.T) {
+	remote.SetOptions(&remote.Option{
+		Url:         `nacos.movie.cc`,                       // nacos server 多地址需要地址用;号隔开，如 Url: "loc1;loc2;loc3"
+		Port:        80,                                     // nacos server端口号
+		NamespaceId: `a2412e88-9729-4abc-ab98-9d218c72a7b4`, // nacos namespace
+		GroupName:   `Movie`,
+	})
+
+	viperCfg := viper.New()
+
+	require.NoError(t, viperCfg.AddRemoteProvider("nacos", `localhost`, `logger`))
+	viperCfg.SetConfigType(`toml`)
+
+	require.NoError(t, viperCfg.ReadRemoteConfig())
+
+	require.EqualValues(t, `test`, viperCfg.GetString(`conf.service`))
+
+	marshaledData, err := toml.Marshal(viperCfg.Get(`conf`))
+
+	require.NoError(t, err)
+	t.Log(string(marshaledData))
+
+	var (
+		cfg     = &Config{}
+		wantCfg = &Config{
+			Service:    "test",
+			Level:      zapcore.DebugLevel,
+			FilePath:   "a",
+			TimeZone:   "b",
+			TimeLayout: "c",
+			Debug:      true,
+			Rotate: &RotateConfig{
+				MaxSize:    200,
+				MaxBackups: 0,
+				MaxAge:     0,
+			},
+		}
+	)
+
+	require.NoError(t, toml.Unmarshal(marshaledData, cfg))
+	require.EqualValues(t, wantCfg, cfg)
+}
+
+func TestNacosOnChange(t *testing.T) {
+	remote.SetOptions(&remote.Option{
+		Url:         `nacos.movie.cc`,                       // nacos server 多地址需要地址用;号隔开，如 Url: "loc1;loc2;loc3"
+		Port:        80,                                     // nacos server端口号
+		NamespaceId: `a2412e88-9729-4abc-ab98-9d218c72a7b4`, // nacos namespace
+		GroupName:   `Movie`,
+	})
+
+	viperCfg := viper.New()
+
+	require.NoError(t, viperCfg.AddRemoteProvider("nacos", `localhost`, `logger`))
+	viperCfg.SetConfigType(`toml`)
+	require.NoError(t, viperCfg.ReadRemoteConfig())
+
+	require.NoError(t, viperCfg.WatchRemoteConfig())
+
+	for {
+		time.Sleep(time.Second)
+		marshaledData, err := toml.Marshal(viperCfg.Get(`conf.service`))
+		require.NoError(t, err)
+		t.Log(string(marshaledData))
+
+		// require.NoError(t, viperCfg.ReadRemoteConfig())
+	}
+}
+
+func TestNacosOnChangeLocal(t *testing.T) {
+	viperCfg := viper.New()
+	viperCfg.SetConfigName(`test`)
+	viperCfg.SetConfigType(`toml`)
+	viperCfg.AddConfigPath(".") // optionally look for config in the working directory
+
+	require.NoError(t, viperCfg.ReadInConfig())
+
+	viperCfg.WatchConfig()
+
+	for {
+		time.Sleep(time.Second)
+		marshaledData, err := toml.Marshal(viperCfg.Get(`conf`))
+		require.NoError(t, err)
+		t.Log(string(marshaledData))
+
+		// require.NoError(t, viperCfg.ReadRemoteConfig())
+	}
 }

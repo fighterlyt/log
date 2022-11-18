@@ -1,0 +1,8 @@
+[conf]
+service =  "test1"   # 服务名称
+level =  "debug"    # 日志级别，分别为debug,info,warn,error,fatal,panic
+filePath =  "a"   # 日志路径, 本地文件路径,如果为空，表示不输出到文件
+timeZone =  "b"   # 时区，默认defaultTimeZone,可以从https = //www.zeitverschiebung.net/en/ 查询时区信息
+timeLayout =  "c" # 输出时间格式,默认为defaultTimeLayout,任何Go支持的格式都是合法的
+debug =  true     # 是否调试，调试模式会输出完整的代码行信息,其他模式只会输出项目内部的
+rotate.maxSize =  200
