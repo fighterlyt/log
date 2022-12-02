@@ -1,12 +1,23 @@
 package log
 
 import (
+	"log"
 	"os"
 	"strings"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+)
+
+var (
+	debug = false
+
+	debugPrintln = func(args ...interface{}) {
+		if debug {
+			log.Println(args...)
+		}
+	}
 )
 
 // Logger 日志器接口
@@ -45,17 +56,28 @@ type logger struct {
 /*
 newLogger 生成一个日志器
 参数:
-*	underlying	*zap.Logger         底层日志器
-*	name      	string              对应的名称
-*	fields    	...zapcore.Field    字段
+*	underlying	*zap.Logger     	底层日志器
+*	name      	string          	对应的名称
+*	skip      	int             	跳过的堆栈
+*	setName   	bool            	是否需要设置名称
+*	last      	bool            	是否名称只需要最后一段
+*	fields    	...zapcore.Field	字段
 返回值:
-*	*logger	*logger
+*	*logger   	*logger         	日志器
 */
-func newLogger(underlying *zap.Logger, name string, skip int, setName bool, fields ...zapcore.Field) *logger {
+func newLogger(underlying *zap.Logger, name string, skip int, setName, last bool, fields ...zapcore.Field) *logger {
 	result := &logger{underlying: underlying, name: name, fields: fields}
 
+	debugPrintln(`newLogger`, name, setName, skip)
+
 	if setName {
-		result.underlying = result.underlying.Named(name)
+		if last {
+			fields := strings.Split(name, `.`)
+			debugPrintln(`named`, fields[len(fields)-1])
+			result.underlying = result.underlying.Named(fields[len(fields)-1])
+		} else {
+			result.underlying = result.underlying.Named(name)
+		}
 	}
 
 	if skip >= 0 {
@@ -74,6 +96,8 @@ Derive 衍生出一个新的子日志器
 *	Logger	Logger	日志器
 */
 func (l *logger) Derive(s string) Logger {
+	debugPrintln(`derive`, s)
+
 	var names []string
 	if l.name == `` {
 		names = append(names, s)
@@ -81,12 +105,12 @@ func (l *logger) Derive(s string) Logger {
 		names = append(names, l.name, s)
 	}
 
-	return newLogger(l.underlying, strings.Join(names, "."), -1, true, l.fields...)
+	return newLogger(l.underlying, strings.Join(names, "."), -1, true, true, l.fields...)
 }
 
 func (l logger) With(fields ...zap.Field) Logger {
 	fields = append(l.fields, fields...)
-	return newLogger(l.underlying.With(fields...), l.name, -1, false)
+	return newLogger(l.underlying.With(fields...), l.name, -1, false, false)
 }
 
 func (l logger) Info(msg string, fields ...zap.Field) {
@@ -114,6 +138,8 @@ func (l logger) Panic(msg string, fields ...zap.Field) {
 }
 
 func (l logger) SetLevel(level zapcore.Level) Logger {
+	debugPrintln(`setLevel`, level, l.name)
+
 	var allCore []zapcore.Core
 	if writeSyncer != nil {
 		allCore = append(allCore, zapcore.NewCore(
@@ -138,7 +164,7 @@ func (l logger) SetLevel(level zapcore.Level) Logger {
 	logger := zap.New(core).With(l.fields...)
 	logger = logger.WithOptions(zap.AddCaller())
 
-	return newLogger(logger, l.name, l.skip, true, l.fields...)
+	return newLogger(logger, l.name, l.skip, true, false, l.fields...)
 }
 
 func (l *logger) Start() Logger {
@@ -146,5 +172,5 @@ func (l *logger) Start() Logger {
 }
 
 func (l *logger) AddCallerSkip(skip int) Logger {
-	return newLogger(l.underlying, l.name, skip, false)
+	return newLogger(l.underlying, l.name, skip, false, false)
 }

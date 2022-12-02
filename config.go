@@ -173,7 +173,7 @@ func (l *Config) Build(cores ...zapcore.Core) (logger Logger, err error) {
 	core = zapcore.NewTee(allCores...)
 	underlyingLogger = zap.New(core, zap.AddCaller())
 
-	return newLogger(underlyingLogger.With(zap.String(`系统`, l.Service)), ``, 1, true), nil
+	return newLogger(underlyingLogger.With(zap.String(`系统`, l.Service)), ``, 1, true, false), nil
 }
 
 func NewEasyLogger(debug, hideConsole bool, filePath, service string) (Logger, error) {

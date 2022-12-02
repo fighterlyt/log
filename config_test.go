@@ -1,15 +1,12 @@
 package log
 
 import (
-	"strings"
-	"testing"
-	"time"
-
 	"github.com/pelletier/go-toml/v2"
 	"github.com/spf13/viper"
+	"strings"
+	"testing"
 
 	"github.com/stretchr/testify/require"
-	remote "gitlab.com/ppub/viper-nacos"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -53,6 +50,8 @@ rotate:
 }
 
 func TestConfig_Build(t *testing.T) {
+	// debug = true
+
 	var (
 		cfg = &Config{
 			Service: "test",
@@ -73,17 +72,17 @@ func TestConfig_Build(t *testing.T) {
 	// 验证日志器
 	infoLogger := originLogger.Derive(`提现`)
 	// Debug 可见
-	infoLogger.Debug(`debug1`)
+	infoLogger.Debug(`提现可见`)
 	// 设置为Info
 	infoLogger = infoLogger.SetLevel(zapcore.InfoLevel)
 	// Debug 不可见
-	infoLogger.Debug(`debug2`)
+	infoLogger.Debug(`提现不可见`)
 	// Debug 可见
 	originLogger.Debug(`origin Debug`)
 	// Info 可见
-	infoLogger.Info(`infoLogger.Info`)
+	infoLogger.Info(`提现可见.Info`)
 	// Warn 可见
-	infoLogger.Warn(`infoLogger.Warn`)
+	infoLogger.Warn(`提现可见.Warn`)
 
 	infoLogger = infoLogger.With(zap.String(`info`, `info`))
 
@@ -91,14 +90,19 @@ func TestConfig_Build(t *testing.T) {
 	// 再次衍生
 	debugLogger := infoLogger.Derive(`汇总`)
 	// Debug不可见
-	debugLogger.Debug(`debug1`)
+	debugLogger.Debug(`不可见`)
 	// 设置为Debug
 	debugLogger = debugLogger.SetLevel(zapcore.DebugLevel)
 	// Debug可见
-	debugLogger.Debug(`debug2`)
+	debugLogger.Debug(`汇总可见`)
 
 	taskLogger := debugLogger.Start()
 	taskLogger.Info(`开始`)
+
+	// 三次衍生
+
+	warnLogger := debugLogger.Derive(`三次`)
+	warnLogger.Info(`三次`)
 }
 
 func TestJSON(t *testing.T) {
@@ -238,13 +242,21 @@ rotate.maxSize =  200`
 
 func TestNewConfigFromToml(t *testing.T) {
 	data := `
-service =  "test"   # 服务名称
-level =  "debug"    # 日志级别，分别为debug,info,warn,error,fatal,panic
-filePath =  "a"   # 日志路径, 本地文件路径,如果为空，表示不输出到文件
-timeZone =  "b"   # 时区，默认defaultTimeZone,可以从https = //www.zeitverschiebung.net/en/ 查询时区信息
-timeLayout =  "c" # 输出时间格式,默认为defaultTimeLayout,任何Go支持的格式都是合法的
-debug =  true     # 是否调试，调试模式会输出完整的代码行信息,其他模式只会输出项目内部的
-rotate.maxSize =  200`
+		Service = 'test'
+        Level = 'debug'
+        FilePath = 'a'
+        TimeZone = 'b'
+        TimeLayout = 'c'
+        Debug = true
+        Dev = false
+        JSON = false
+        HideConsole = false
+        
+        [Rotate]
+        MaxSize = 200
+        MaxBackups = 0
+        MaxAge = 0
+`
 	var (
 		cfg     = &Config{}
 		wantCfg = &Config{
@@ -263,96 +275,10 @@ rotate.maxSize =  200`
 		err error
 	)
 
+	tstData, _ := toml.Marshal(wantCfg)
+
+	t.Log(string(tstData))
 	cfg, err = NewConfigFromToml([]byte(data))
 	require.NoError(t, err, `读取`)
 	require.EqualValues(t, wantCfg, cfg)
-}
-
-func TestNacos(t *testing.T) {
-	remote.SetOptions(&remote.Option{
-		Url:         `nacos.movie.cc`,                       // nacos server 多地址需要地址用;号隔开，如 Url: "loc1;loc2;loc3"
-		Port:        80,                                     // nacos server端口号
-		NamespaceId: `a2412e88-9729-4abc-ab98-9d218c72a7b4`, // nacos namespace
-		GroupName:   `Movie`,
-	})
-
-	viperCfg := viper.New()
-
-	require.NoError(t, viperCfg.AddRemoteProvider("nacos", `localhost`, `logger`))
-	viperCfg.SetConfigType(`toml`)
-
-	require.NoError(t, viperCfg.ReadRemoteConfig())
-
-	require.EqualValues(t, `test`, viperCfg.GetString(`conf.service`))
-
-	marshaledData, err := toml.Marshal(viperCfg.Get(`conf`))
-
-	require.NoError(t, err)
-	t.Log(string(marshaledData))
-
-	var (
-		cfg     = &Config{}
-		wantCfg = &Config{
-			Service:    "test",
-			Level:      zapcore.DebugLevel,
-			FilePath:   "a",
-			TimeZone:   "b",
-			TimeLayout: "c",
-			Debug:      true,
-			Rotate: &RotateConfig{
-				MaxSize:    200,
-				MaxBackups: 0,
-				MaxAge:     0,
-			},
-		}
-	)
-
-	require.NoError(t, toml.Unmarshal(marshaledData, cfg))
-	require.EqualValues(t, wantCfg, cfg)
-}
-
-func TestNacosOnChange(t *testing.T) {
-	remote.SetOptions(&remote.Option{
-		Url:         `nacos.movie.cc`,                       // nacos server 多地址需要地址用;号隔开，如 Url: "loc1;loc2;loc3"
-		Port:        80,                                     // nacos server端口号
-		NamespaceId: `a2412e88-9729-4abc-ab98-9d218c72a7b4`, // nacos namespace
-		GroupName:   `Movie`,
-	})
-
-	viperCfg := viper.New()
-
-	require.NoError(t, viperCfg.AddRemoteProvider("nacos", `localhost`, `logger`))
-	viperCfg.SetConfigType(`toml`)
-	require.NoError(t, viperCfg.ReadRemoteConfig())
-
-	require.NoError(t, viperCfg.WatchRemoteConfig())
-
-	for {
-		time.Sleep(time.Second)
-		marshaledData, err := toml.Marshal(viperCfg.Get(`conf.service`))
-		require.NoError(t, err)
-		t.Log(string(marshaledData))
-
-		// require.NoError(t, viperCfg.ReadRemoteConfig())
-	}
-}
-
-func TestNacosOnChangeLocal(t *testing.T) {
-	viperCfg := viper.New()
-	viperCfg.SetConfigName(`test`)
-	viperCfg.SetConfigType(`toml`)
-	viperCfg.AddConfigPath(".") // optionally look for config in the working directory
-
-	require.NoError(t, viperCfg.ReadInConfig())
-
-	viperCfg.WatchConfig()
-
-	for {
-		time.Sleep(time.Second)
-		marshaledData, err := toml.Marshal(viperCfg.Get(`conf`))
-		require.NoError(t, err)
-		t.Log(string(marshaledData))
-
-		// require.NoError(t, viperCfg.ReadRemoteConfig())
-	}
 }
