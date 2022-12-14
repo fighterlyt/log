@@ -1,11 +1,11 @@
 package log
 
 import (
-	"github.com/pelletier/go-toml/v2"
-	"github.com/spf13/viper"
 	"strings"
 	"testing"
 
+	"github.com/pelletier/go-toml/v2"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -19,6 +19,9 @@ filePath: "a"   # 日志路径, 本地文件路径,如果为空，表示不输�
 timeZone: "b"   # 时区，默认defaultTimeZone,可以从https://www.zeitverschiebung.net/en/ 查询时区信息
 timeLayout: "c" # 输出时间格式,默认为defaultTimeLayout,任何Go支持的格式都是合法的
 debug: true     # 是否调试，调试模式会输出完整的代码行信息,其他模式只会输出项目内部的
+levelToPath:
+  debug: debug.log
+  info: info.log
 rotate:
   maxSize: 200
 `
@@ -37,10 +40,16 @@ rotate:
 				MaxBackups: 0,
 				MaxAge:     0,
 			},
+			LevelToPath: map[zapcore.Level]string{
+				zapcore.DebugLevel: `debug.log`,
+				zapcore.InfoLevel:  `info.log`,
+			},
 		}
 		err error
 	)
 
+	// data, _ := yaml.Marshal(wantCfg)
+	// t.Log(string(data))
 	cfg, err = NewConfigFromYamlData(strings.NewReader(yamlCfg))
 	require.NoError(t, err, `从yaml数据解析配置`)
 	require.EqualValues(t, wantCfg, cfg, `结果一致`)
@@ -207,7 +216,11 @@ filePath =  "a"   # 日志路径, 本地文件路径,如果为空，表示不输
 timeZone =  "b"   # 时区，默认defaultTimeZone,可以从https = //www.zeitverschiebung.net/en/ 查询时区信息
 timeLayout =  "c" # 输出时间格式,默认为defaultTimeLayout,任何Go支持的格式都是合法的
 debug =  true     # 是否调试，调试模式会输出完整的代码行信息,其他模式只会输出项目内部的
-rotate.maxSize =  200`
+rotate.maxSize =  200
+[levelToPath]
+debug = "debug.log"
+info = "info.log"
+`
 	viperCfg := viper.New()
 	viperCfg.SetConfigType(`toml`)
 	require.NoError(t, viperCfg.ReadConfig(strings.NewReader(data)), `读取`)
@@ -232,6 +245,10 @@ rotate.maxSize =  200`
 				MaxSize:    200,
 				MaxBackups: 0,
 				MaxAge:     0,
+			},
+			LevelToPath: map[zapcore.Level]string{
+				zapcore.DebugLevel: `debug.log`,
+				zapcore.InfoLevel:  `info.log`,
 			},
 		}
 	)
@@ -281,4 +298,40 @@ func TestNewConfigFromToml(t *testing.T) {
 	cfg, err = NewConfigFromToml([]byte(data))
 	require.NoError(t, err, `读取`)
 	require.EqualValues(t, wantCfg, cfg)
+}
+
+func TestLogger_AddLogrus(t *testing.T) {
+	var (
+		cfg = &Config{
+			Service: "test",
+			Level:   zapcore.DebugLevel,
+			Debug:   true,
+			LevelToPath: map[zapcore.Level]string{
+				zapcore.DebugLevel: `debug.log`,
+				zapcore.InfoLevel:  `info.log`,
+			},
+			Rotate: &RotateConfig{},
+			// FilePath: `a`,
+		}
+	)
+
+	originLogger, err := cfg.Build()
+
+	require.NoError(t, err, `构建基础`)
+
+	originLogger.Info(`info`)
+
+	originLogger.Debug(`debug`)
+
+	derived := originLogger.Derive(`derive`)
+
+	derived.Info(`info`)
+	derived.Derive(`debug`)
+
+	// 再次derive
+	derived = derived.Derive(`derive`)
+
+	derived.Info(`info`)
+	derived.Derive(`debug`)
+
 }

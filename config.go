@@ -41,17 +41,18 @@ type RotateConfig struct {
 
 // Config 日志器配置
 type Config struct {
-	Service     string         `yaml:"service"`     // 日志名称
-	Level       zapcore.Level  `yaml:"level"`       // 最低级别
-	FilePath    string         `yaml:"filePath"`    // 日志文件路径,如果为空，表示不输出，可以包含路径,最终生成一个FilePath.log.
-	TimeZone    string         `yaml:"timeZone"`    // 时区，默认defaultTimeZone,可以从https://www.zeitverschiebung.net/en/ 查询时区信息
-	TimeLayout  string         `yaml:"timeLayout"`  // 输出时间格式,默认为defaultTimeLayout,任何Go支持的格式都是合法的
-	Debug       bool           `yaml:"debug"`       // 是否调试，调试模式会输出完整的代码行信息,其他模式只会输出项目内部的代码行信息
-	Dev         bool           `yaml:"dev"`         // 开发模式，输出完整路径
-	JSON        bool           `yaml:"json"`        // 是否输出为一个完整的json,默认为false
-	HideConsole bool           `yaml:"hideConsole"` // 是否隐藏终端输出
-	Rotate      *RotateConfig  `yaml:"rotate"`      // 日志 rotate
-	location    *time.Location `yaml:"location"`
+	Service     string                   `yaml:"service"`     // 日志名称
+	Level       zapcore.Level            `yaml:"level"`       // 最低级别
+	FilePath    string                   `yaml:"filePath"`    // 日志文件路径,如果为空，表示不输出，可以包含路径,最终生成一个FilePath.log.
+	TimeZone    string                   `yaml:"timeZone"`    // 时区，默认defaultTimeZone,可以从https://www.zeitverschiebung.net/en/ 查询时区信息
+	TimeLayout  string                   `yaml:"timeLayout"`  // 输出时间格式,默认为defaultTimeLayout,任何Go支持的格式都是合法的
+	Debug       bool                     `yaml:"debug"`       // 是否调试，调试模式会输出完整的代码行信息,其他模式只会输出项目内部的代码行信息
+	Dev         bool                     `yaml:"dev"`         // 开发模式，输出完整路径
+	JSON        bool                     `yaml:"json"`        // 是否输出为一个完整的json,默认为false
+	HideConsole bool                     `yaml:"hideConsole"` // 是否隐藏终端输出
+	Rotate      *RotateConfig            `yaml:"rotate"`      // 日志 rotate
+	location    *time.Location           `yaml:"location"`    // 输出time.Time时的时区
+	LevelToPath map[zapcore.Level]string `yaml:"levelToPath"`
 }
 
 /*
@@ -160,8 +161,26 @@ func (l *Config) Build(cores ...zapcore.Core) (logger Logger, err error) {
 		allCores = append(allCores, zapcore.NewCore(
 			encoder,
 			writeSyncer,
-			cfg.Level,
+			newLevelEnablerWithExcept(cfg.Level, l.LevelToPath),
 		))
+	}
+
+	if l.LevelToPath != nil {
+		for level := range l.LevelToPath {
+			lumberjackLogger := &lumberjack.Logger{
+				Filename:   l.LevelToPath[level],
+				MaxSize:    l.Rotate.MaxSize, // megabytes
+				MaxBackups: l.Rotate.MaxBackups,
+				MaxAge:     l.Rotate.MaxAge, // days
+				Compress:   true,
+			}
+
+			fillLumberjack(lumberjackLogger)
+
+			writeSyncer = zapcore.NewMultiWriteSyncer(zapcore.AddSync(lumberjackLogger))
+
+			allCores = append(allCores, zapcore.NewCore(encoder, writeSyncer, level))
+		}
 	}
 
 	if !l.HideConsole {
@@ -173,7 +192,7 @@ func (l *Config) Build(cores ...zapcore.Core) (logger Logger, err error) {
 	core = zapcore.NewTee(allCores...)
 	underlyingLogger = zap.New(core, zap.AddCaller())
 
-	return newLogger(underlyingLogger.With(zap.String(`系统`, l.Service)), ``, 1, true, false), nil
+	return newLogger(underlyingLogger.With(zap.String(`系统`, l.Service)), ``, 1, true, false, l.LevelToPath), nil
 }
 
 func NewEasyLogger(debug, hideConsole bool, filePath, service string) (Logger, error) {
@@ -230,4 +249,29 @@ func fillLumberjack(lumberjackLogger *lumberjack.Logger) {
 	if lumberjackLogger.MaxBackups == 0 {
 		lumberjackLogger.MaxBackups = defaultRotateMaxBackups
 	}
+}
+
+type levelEnableWithExcept struct {
+	zapcore.LevelEnabler
+	except map[zapcore.Level]bool
+}
+
+func (l levelEnableWithExcept) Enabled(level zapcore.Level) bool {
+	if !l.LevelEnabler.Enabled(level) {
+		return false
+	}
+
+	return !l.except[level]
+}
+func newLevelEnablerWithExcept[T any](enabler zapcore.LevelEnabler, except map[zapcore.Level]T) levelEnableWithExcept {
+	result := levelEnableWithExcept{
+		LevelEnabler: enabler,
+		except:       make(map[zapcore.Level]bool, len(except)),
+	}
+
+	for level := range except {
+		result.except[level] = true
+	}
+
+	return result
 }
