@@ -15,13 +15,13 @@ func TestConfig_Unmarshal(t *testing.T) {
 	yamlCfg := `
 service: test   # 服务名称
 level: debug    # 日志级别，分别为debug,info,warn,error,fatal,panic
-filePath: "a"   # 日志路径, 本地文件路径,如果为空，表示不输出到文件
-timeZone: "b"   # 时区，默认defaultTimeZone,可以从https://www.zeitverschiebung.net/en/ 查询时区信息
-timeLayout: "c" # 输出时间格式,默认为defaultTimeLayout,任何Go支持的格式都是合法的
+filePath: "logs/"   # 日志路径, 本地文件路径,如果为空，表示不输出到文件
+timeZone: ""   # 时区，默认defaultTimeZone,可以从https://www.zeitverschiebung.net/en/ 查询时区信息
+timeLayout: "" # 输出时间格式,默认为defaultTimeLayout,任何Go支持的格式都是合法的
 debug: true     # 是否调试，调试模式会输出完整的代码行信息,其他模式只会输出项目内部的
 levelToPath:
-  debug: debug.log
-  info: info.log
+  debug: logs/debug.log
+  info: logs/info.log
 rotate:
   maxSize: 200
 `
@@ -31,18 +31,18 @@ rotate:
 		wantCfg = &Config{
 			Service:    "test",
 			Level:      zapcore.DebugLevel,
-			FilePath:   "a",
-			TimeZone:   "b",
-			TimeLayout: "c",
+			FilePath:   "logs/",
+			TimeZone:   "",
+			TimeLayout: "",
 			Debug:      true,
 			Rotate: &RotateConfig{
 				MaxSize:    200,
 				MaxBackups: 0,
 				MaxAge:     0,
 			},
-			LevelToPath: map[zapcore.Level]string{
-				zapcore.DebugLevel: `debug.log`,
-				zapcore.InfoLevel:  `info.log`,
+			LevelToPath: map[string]string{
+				zapcore.DebugLevel.String(): `logs/debug.log`,
+				zapcore.InfoLevel.String():  `logs/info.log`,
 			},
 		}
 		err error
@@ -54,8 +54,11 @@ rotate:
 	require.NoError(t, err, `从yaml数据解析配置`)
 	require.EqualValues(t, wantCfg, cfg, `结果一致`)
 
-	_, err = cfg.Build()
-	require.Errorf(t, err, `构建错误`)
+	infoLogger, err := cfg.Build()
+	require.NoError(t, err, `构建错误`)
+
+	infoLogger.Info(`info`)
+	infoLogger.Debug(`debug`)
 }
 
 func TestConfig_Build(t *testing.T) {
@@ -212,14 +215,13 @@ func TestViper(t *testing.T) {
 	data := `[conf]
 service =  "test"   # 服务名称
 level =  "debug"    # 日志级别，分别为debug,info,warn,error,fatal,panic
-filePath =  "a"   # 日志路径, 本地文件路径,如果为空，表示不输出到文件
-timeZone =  "b"   # 时区，默认defaultTimeZone,可以从https = //www.zeitverschiebung.net/en/ 查询时区信息
-timeLayout =  "c" # 输出时间格式,默认为defaultTimeLayout,任何Go支持的格式都是合法的
+filePath =  "logs/"   # 日志路径, 本地文件路径,如果为空，表示不输出到文件
+timeZone =  ""   # 时区，默认defaultTimeZone,可以从https = //www.zeitverschiebung.net/en/ 查询时区信息
+timeLayout =  "" # 输出时间格式,默认为defaultTimeLayout,任何Go支持的格式都是合法的
 debug =  true     # 是否调试，调试模式会输出完整的代码行信息,其他模式只会输出项目内部的
 rotate.maxSize =  200
-[levelToPath]
-debug = "debug.log"
-info = "info.log"
+levelToPath.debug = "logs/debug.log"
+levelToPath.info = "logs/info.log"
 `
 	viperCfg := viper.New()
 	viperCfg.SetConfigType(`toml`)
@@ -237,23 +239,35 @@ info = "info.log"
 		wantCfg = &Config{
 			Service:    "test",
 			Level:      zapcore.DebugLevel,
-			FilePath:   "a",
-			TimeZone:   "b",
-			TimeLayout: "c",
+			FilePath:   "logs/",
+			TimeZone:   "",
+			TimeLayout: "",
 			Debug:      true,
 			Rotate: &RotateConfig{
 				MaxSize:    200,
 				MaxBackups: 0,
 				MaxAge:     0,
 			},
-			LevelToPath: map[zapcore.Level]string{
-				zapcore.DebugLevel: `debug.log`,
-				zapcore.InfoLevel:  `info.log`,
+			LevelToPath: map[string]string{
+				`debug`: `debug.log`,
+				`info`:  `info.log`,
 			},
 		}
 	)
 
 	require.NoError(t, toml.Unmarshal(marshaledData, cfg))
+
+	t.Log(cfg.LevelToPath)
+
+	var (
+		logger Logger
+	)
+
+	logger, err = cfg.Build()
+	require.NoError(t, err)
+
+	logger.Info(`info-toml`)
+	logger.Debug(`debug-toml`)
 	require.EqualValues(t, wantCfg, cfg)
 }
 
@@ -306,9 +320,9 @@ func TestLogger_AddLogrus(t *testing.T) {
 			Service: "test",
 			Level:   zapcore.DebugLevel,
 			Debug:   true,
-			LevelToPath: map[zapcore.Level]string{
-				zapcore.DebugLevel: `debug.log`,
-				zapcore.InfoLevel:  `info.log`,
+			LevelToPath: map[string]string{
+				zapcore.DebugLevel.String(): `debug.log`,
+				zapcore.InfoLevel.String():  `info.log`,
 			},
 			Rotate: &RotateConfig{},
 			// FilePath: `a`,

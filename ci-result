@@ -1,0 +1,6 @@
+config.go:56:2: confusing-naming: Field 'levelToPath' differs only by capitalization to other field in the struct type Config (revive)
+	levelToPath map[zapcore.Level]string
+	^
+config.go:81:3: assignments should only be cuddled with other assignments (wsl)
+		l.levelToPath[level] = path
+		^
