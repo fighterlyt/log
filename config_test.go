@@ -222,6 +222,7 @@ debug =  true     # 是否调试，调试模式会输出完整的代码行信息
 rotate.maxSize =  200
 levelToPath.debug = "logs/debug.log"
 levelToPath.info = "logs/info.log"
+levelToPath.warn ="logs/warn.log"
 `
 	viperCfg := viper.New()
 	viperCfg.SetConfigType(`toml`)
@@ -251,6 +252,7 @@ levelToPath.info = "logs/info.log"
 			LevelToPath: map[string]string{
 				`debug`: `debug.log`,
 				`info`:  `info.log`,
+				`warn`:  `warn.log`,
 			},
 		}
 	)
@@ -268,6 +270,7 @@ levelToPath.info = "logs/info.log"
 
 	logger.Info(`info-toml`)
 	logger.Debug(`debug-toml`)
+	logger.Warn(`warn`)
 	require.EqualValues(t, wantCfg, cfg)
 }
 

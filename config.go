@@ -202,7 +202,7 @@ func (l *Config) Build(cores ...zapcore.Core) (logger Logger, err error) {
 
 			writeSyncer = zapcore.NewMultiWriteSyncer(zapcore.AddSync(lumberjackLogger))
 
-			allCores = append(allCores, zapcore.NewCore(encoder, writeSyncer, level))
+			allCores = append(allCores, zapcore.NewCore(encoder, writeSyncer, newLevelEnablerWithExcept(level, l.levelToPath, level)))
 		}
 	}
 
@@ -286,7 +286,7 @@ func (l levelEnableWithExcept) Enabled(level zapcore.Level) bool {
 
 	return !l.except[level]
 }
-func newLevelEnablerWithExcept[T any](enabler zapcore.LevelEnabler, except map[zapcore.Level]T) levelEnableWithExcept {
+func newLevelEnablerWithExcept[T any](enabler zapcore.LevelEnabler, except map[zapcore.Level]T, exceptLevels ...zapcore.Level) levelEnableWithExcept {
 	result := levelEnableWithExcept{
 		LevelEnabler: enabler,
 		except:       make(map[zapcore.Level]bool, len(except)),
@@ -294,6 +294,10 @@ func newLevelEnablerWithExcept[T any](enabler zapcore.LevelEnabler, except map[z
 
 	for level := range except {
 		result.except[level] = true
+	}
+
+	for _, exceptLevel := range exceptLevels {
+		delete(result.except, exceptLevel)
 	}
 
 	return result
