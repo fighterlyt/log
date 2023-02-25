@@ -4,14 +4,15 @@
 
 # 版本
 
-| 版本   | 修改时间                | 修改人     | 修改内容                                              |
-|------|---------------------|---------|---------------------------------------------------|
-|      |                     |         |                                                   |
-| v0.5 | 2022-12-14 16:24:47 | everest | 允许在配置[LevelToPath](#config)中直接配置不同level输出到不同文件    |
-| v0.4 | 2022-12-02 08:36:51 | everest | 处理了多次Derive()导致重复的问题                              |
-| v0.3 | 2022-11-17 14:09:01 | everest | 添加从toml 文件构建                                      |
+
+| 版本 | 修改时间            | 修改人  | 修改内容                                                                |
+| ---- | ------------------- | ------- | ----------------------------------------------------------------------- |
+|      |                     |         |                                                                         |
+| v0.5 | 2022-12-14 16:24:47 | everest | 允许在配置[LevelToPath](#config)中直接配置不同level输出到不同文件       |
+| v0.4 | 2022-12-02 08:36:51 | everest | 处理了多次Derive()导致重复的问题                                        |
+| v0.3 | 2022-11-17 14:09:01 | everest | 添加从toml 文件构建                                                     |
 | v0.2 | 2021-04-06 10:34:42 | everest | 添加一个配置项，[JSON](#config),允许将整个日志作为JSON输出，配合grayLog |
-| v0.1 | 2021-04-02 20:39    | everest | 初步完成                                              |
+| v0.1 | 2021-04-02 20:39    | everest | 初步完成                                                                |
 
 # 详述
 
@@ -21,15 +22,15 @@
 
 ## 目标
 
-- [x] 不同的日志级别
-    - [ ] 不同的模块可以使用不同的日志级别
-    - [ ] 级别接受内嵌式定义，层级不受影响
-    - [x] 运行时调整日志级别
-- [x] 支持输出到stdout和文件，并且文件提供rotate
-- [x] 使用结构化的输出，而不是fmt格式
-- [x] 携带代码行数，方便定位
-    - [x] 开发环境展示完整路径,可点击
-    - [x] 线上环境展示相对路径
+- [X]  不同的日志级别
+  - [ ]  不同的模块可以使用不同的日志级别
+  - [ ]  级别接受内嵌式定义，层级不受影响
+  - [X]  运行时调整日志级别
+- [X]  支持输出到stdout和文件，并且文件提供rotate
+- [X]  使用结构化的输出，而不是fmt格式
+- [X]  携带代码行数，方便定位
+  - [X]  开发环境展示完整路径,可点击
+  - [X]  线上环境展示相对路径
 
 ## 概念
 
@@ -46,7 +47,7 @@ concentrate=true
     moduleAOperationB[label="功能B日志器"]
 
     moduleLoggerB[label="模块B日志器"]
-    
+  
     projectLogger->{moduleLoggerA,moduleLoggerB}[color="blue",style=filled]
     moduleLoggerA->moduleLoggerB[dir=none,style=dashed,constraint=false,labeltooltip=""]
     moduleLoggerA->{moduleAOperationA,moduleAOperationB}[color="red",style=filled]

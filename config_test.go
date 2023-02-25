@@ -268,9 +268,13 @@ levelToPath.warn ="logs/warn.log"
 	logger, err = cfg.Build()
 	require.NoError(t, err)
 
-	logger.Info(`info-toml`)
-	logger.Debug(`debug-toml`)
-	logger.Warn(`warn`)
+	logger = logger.Derive(`mysql`)
+	for i := 0; i < 10000; i++ {
+		logger.Info(`info-toml`)
+		logger.Debug(`debug-toml`)
+		logger.Warn(`warn`)
+	}
+
 	require.EqualValues(t, wantCfg, cfg)
 }
 
