@@ -168,7 +168,7 @@ func (l logger) SetLevel(level zapcore.Level) Logger {
 	resultLogger := zap.New(core).With(l.fields...)
 	resultLogger = resultLogger.WithOptions(zap.AddCaller())
 
-	result := newLogger(resultLogger, l.name, -1, true, false, l.levelToPath, l.fields...)
+	result := newLogger(resultLogger, l.name, 1, true, false, l.levelToPath, l.fields...)
 
 	return result
 }
