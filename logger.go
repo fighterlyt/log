@@ -74,9 +74,9 @@ func newLogger(underlying *zap.Logger, name string, skip int, setName, last bool
 
 	if setName {
 		if last {
-			fields := strings.Split(name, `.`)
-			debugPrintln(`named`, fields[len(fields)-1])
-			result.underlying = result.underlying.Named(fields[len(fields)-1])
+			nameFields := strings.Split(name, `.`)
+			debugPrintln(`named`, nameFields[len(nameFields)-1])
+			result.underlying = result.underlying.Named(nameFields[len(nameFields)-1])
 		} else {
 			result.underlying = result.underlying.Named(name)
 		}
@@ -165,10 +165,10 @@ func (l logger) SetLevel(level zapcore.Level) Logger {
 
 	core = zapcore.NewTee(allCore...)
 
-	logger := zap.New(core).With(l.fields...)
-	logger = logger.WithOptions(zap.AddCaller())
+	resultLogger := zap.New(core).With(l.fields...)
+	resultLogger = resultLogger.WithOptions(zap.AddCaller())
 
-	result := newLogger(logger, l.name, l.skip, true, false, l.levelToPath, l.fields...)
+	result := newLogger(resultLogger, l.name, -1, true, false, l.levelToPath, l.fields...)
 
 	return result
 }
