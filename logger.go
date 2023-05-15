@@ -1,6 +1,7 @@
 package log
 
 import (
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -19,6 +20,11 @@ var (
 		}
 	}
 )
+
+type Hook interface {
+	Writer() io.Writer
+	MinLevel() zapcore.Level
+}
 
 // Logger 日志器接口
 type Logger interface {

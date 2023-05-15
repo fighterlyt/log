@@ -54,6 +54,7 @@ type Config struct {
 	location    *time.Location    `yaml:"location"`    // 输出time.Time时的时区
 	LevelToPath map[string]string `yaml:"levelToPath"`
 	levelToPath map[zapcore.Level]string
+	Hooks       []Hook
 }
 
 /*
@@ -208,6 +209,12 @@ func (l *Config) Build(cores ...zapcore.Core) (logger Logger, err error) {
 
 	if !l.HideConsole {
 		allCores = append(allCores, zapcore.NewCore(encoder, os.Stdout, cfg.Level))
+	}
+
+	for i := range l.Hooks {
+		hook := l.Hooks[i]
+
+		allCores = append(allCores, zapcore.NewCore(encoder, zapcore.AddSync(hook.Writer()), hook.MinLevel()))
 	}
 
 	allCores = append(allCores, cores...)
