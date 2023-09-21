@@ -170,6 +170,10 @@ func (l *Config) Build(cores ...zapcore.Core) (logger Logger, err error) {
 	}
 
 	if l.FilePath != `` {
+		if l.Rotate == nil {
+			l.Rotate = &RotateConfig{}
+		}
+
 		lumberjackLogger := &lumberjack.Logger{
 			Filename:   l.FilePath + ".log",
 			MaxSize:    l.Rotate.MaxSize, // megabytes
