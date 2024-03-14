@@ -32,6 +32,7 @@ type Logger interface {
 	Derive(name string) Logger
 	// With 添加某些字段
 	With(fields ...zap.Field) Logger
+	WithWhenNotExist(key string, field zap.Field) Logger
 	// Debug 输出日志到Debug 级别
 	Debug(msg string, fields ...zap.Field)
 	// Info 输出日志到Info 级别
@@ -51,13 +52,22 @@ type Logger interface {
 	AddCallerSkip(skip int) Logger
 }
 
+func ensureDuplicateKeys(data *Exist) *Exist {
+	if data != nil {
+		return data
+	}
+
+	return NewExist(10)
+}
+
 // logger 日志器的实现
 type logger struct {
-	underlying  *zap.Logger              // 底层日志器
-	fields      []zapcore.Field          // 嵌套的字段
-	name        string                   // 对应的名称
-	skip        int                      // skip
-	levelToPath map[zapcore.Level]string // 不同的级别分隔
+	underlying    *zap.Logger              // 底层日志器
+	fields        []zapcore.Field          // 嵌套的字段
+	name          string                   // 对应的名称
+	skip          int                      // skip
+	levelToPath   map[zapcore.Level]string // 不同的级别分隔
+	duplicateKeys *Exist                   // 是否存在
 }
 
 /*
@@ -73,8 +83,13 @@ newLogger 生成一个日志器
 返回值:
 *	*logger   	*logger         	日志器
 */
-func newLogger(underlying *zap.Logger, name string, skip int, setName, last bool, levelToPath map[zapcore.Level]string, fields ...zapcore.Field) *logger { //nolint:lll
-	result := &logger{underlying: underlying, name: name, fields: fields}
+func newLogger(underlying *zap.Logger, name string, skip int, setName, last bool, levelToPath map[zapcore.Level]string, duplicateKeys *Exist, fields ...zapcore.Field) *logger { //nolint:lll
+	result := &logger{
+		underlying:    underlying,
+		name:          name,
+		duplicateKeys: ensureDuplicateKeys(duplicateKeys),
+		fields:        fields,
+	}
 
 	debugPrintln(`newLogger`, name, setName, skip)
 
@@ -115,12 +130,29 @@ func (l *logger) Derive(s string) Logger {
 		names = append(names, l.name, s)
 	}
 
-	return newLogger(l.underlying, strings.Join(names, "."), -1, true, true, l.levelToPath, l.fields...)
+	return newLogger(l.underlying, strings.Join(names, "."), -1, true, true, l.levelToPath, l.duplicateKeys.Copy(), l.fields...)
 }
 
 func (l logger) With(fields ...zap.Field) Logger {
 	fields = append(l.fields, fields...)
-	return newLogger(l.underlying.With(fields...), l.name, -1, false, false, l.levelToPath)
+
+	return newLogger(l.underlying.With(fields...), l.name, -1, false, false, l.levelToPath, l.duplicateKeys.Copy())
+}
+
+func (l logger) WithWhenNotExist(key string, field zap.Field) Logger {
+	// 判断是否存在，存在就返回l
+	if l.duplicateKeys.Exist(key) {
+		return &l
+	}
+
+	// 不存在就直接调用
+	fields := append(l.fields, field)
+
+	duplicate := l.duplicateKeys.Copy()
+
+	duplicate.Set(key)
+
+	return newLogger(l.underlying.With(fields...), l.name, -1, false, false, l.levelToPath, duplicate)
 }
 
 func (l logger) Info(msg string, fields ...zap.Field) {
@@ -174,7 +206,7 @@ func (l logger) SetLevel(level zapcore.Level) Logger {
 	resultLogger := zap.New(core).With(l.fields...)
 	resultLogger = resultLogger.WithOptions(zap.AddCaller())
 
-	result := newLogger(resultLogger, l.name, 1, true, false, l.levelToPath, l.fields...)
+	result := newLogger(resultLogger, l.name, 1, true, false, l.levelToPath, nil, l.fields...)
 
 	return result
 }
@@ -184,5 +216,5 @@ func (l *logger) Start() Logger {
 }
 
 func (l *logger) AddCallerSkip(skip int) Logger {
-	return newLogger(l.underlying, l.name, skip, false, false, l.levelToPath)
+	return newLogger(l.underlying, l.name, skip, false, false, l.levelToPath, l.duplicateKeys)
 }
