@@ -34,9 +34,10 @@ var (
 
 // RotateConfig rotate 配置
 type RotateConfig struct {
-	MaxSize    int `yaml:"maxSize"`    // 单个日志文件最大大小，单位为MB
-	MaxBackups int `yaml:"maxBackups"` // 最大部分数量
-	MaxAge     int `yaml:"maxAge"`     // 最大保留时间,单位为天
+	MaxSize         int  `yaml:"maxSize"`         // 单个日志文件最大大小，单位为MB
+	MaxBackups      int  `yaml:"maxBackups"`      // 最大部分数量
+	MaxAge          int  `yaml:"maxAge"`          // 最大保留时间,单位为天
+	DisableCompress bool `yaml:"disableCompress"` // 不压缩
 }
 
 // Config 日志器配置
@@ -179,7 +180,7 @@ func (l *Config) Build(cores ...zapcore.Core) (logger Logger, err error) {
 			MaxSize:    l.Rotate.MaxSize, // megabytes
 			MaxBackups: l.Rotate.MaxBackups,
 			MaxAge:     l.Rotate.MaxAge, // days
-			Compress:   true,
+			Compress:   !l.Rotate.DisableCompress,
 		}
 
 		fillLumberjack(lumberjackLogger)
