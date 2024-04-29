@@ -1,4 +1,4 @@
-module git.lc-comminities.top/server/log
+module git.lc-communities.top/server/log
 
 go 1.18
 
