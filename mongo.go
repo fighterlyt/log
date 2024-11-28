@@ -1,8 +1,10 @@
 package log
 
 import (
+	"context"
 	"fmt"
 
+	"go.mongodb.org/mongo-driver/event"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
 )
@@ -50,4 +52,20 @@ func anyToZapFieldMongo(data ...any) []zap.Field {
 	}
 
 	return result
+}
+
+func (l MongoLogger) CommandMonitor() *event.CommandMonitor {
+	return &event.CommandMonitor{
+		Started: func(ctx context.Context, startedEvent *event.CommandStartedEvent) {
+			l.Logger.Info(`开始执行`, zap.Int64(`请求ID`, startedEvent.RequestID), zap.Any(`command`, startedEvent.Command.String()))
+		},
+		Succeeded: func(ctx context.Context, succeededEvent *event.CommandSucceededEvent) {
+			id := succeededEvent.RequestID
+			l.Logger.Info(`执行成功`, zap.Int64(`请求ID`, id), zap.Duration(`耗时`, succeededEvent.Duration), zap.Any(`result`, succeededEvent.Reply.String()))
+		},
+		Failed: func(ctx context.Context, failedEvent *event.CommandFailedEvent) {
+			id := failedEvent.RequestID
+			l.Logger.Info(`执行失败`, zap.Int64(`请求ID`, id), zap.Duration(`耗时`, failedEvent.Duration), zap.String(`原因`, failedEvent.Failure))
+		},
+	}
 }
