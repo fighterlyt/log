@@ -80,6 +80,7 @@ func (l *Config) tidy() error {
 		if level, err = zapcore.ParseLevel(levelText); err != nil {
 			return errors.Wrapf(err, `解析level[%s]`, levelText)
 		}
+
 		l.levelToPath[level] = path
 	}
 

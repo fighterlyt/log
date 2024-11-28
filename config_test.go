@@ -63,7 +63,6 @@ rotate:
 
 func TestConfig_Build(t *testing.T) {
 	// debug = true
-
 	var (
 		cfg = &Config{
 			Service: "test",
@@ -295,6 +294,7 @@ func TestNewConfigFromToml(t *testing.T) {
         MaxBackups = 0
         MaxAge = 0
 `
+
 	var (
 		cfg     = &Config{}
 		wantCfg = &Config{
@@ -316,6 +316,7 @@ func TestNewConfigFromToml(t *testing.T) {
 	tstData, _ := toml.Marshal(wantCfg)
 
 	t.Log(string(tstData))
+
 	cfg, err = NewConfigFromToml([]byte(data))
 	require.NoError(t, err, `读取`)
 	require.EqualValues(t, wantCfg, cfg)
@@ -354,5 +355,4 @@ func TestLogger_AddLogrus(t *testing.T) {
 
 	derived.Info(`info`)
 	derived.Derive(`debug`)
-
 }
