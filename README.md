@@ -16,7 +16,7 @@
 
 # 详述
 
-![golangci]()
+![golangci](https://img.shields.io/badge/golangci--lint-2-green)
 
 [ci-result](ci-result)
 
