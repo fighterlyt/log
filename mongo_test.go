@@ -13,7 +13,7 @@ import (
 func TestMongo(t *testing.T) {
 	testLogger, _ := NewEasyLogger(true, false, ``, `test`)
 
-	mongoLogger := NewMongoLogger(testLogger)
+	mongoLogger := NewMongoLogger(testLogger, 10240)
 
 	// Create a client with our logger options.
 
@@ -40,7 +40,7 @@ func TestMongo(t *testing.T) {
 func TestMongoWithMonitor(t *testing.T) {
 	testLogger, _ := NewEasyLogger(true, false, ``, `test`)
 
-	mongoLogger := NewMongoLogger(testLogger)
+	mongoLogger := NewMongoLogger(testLogger, 10240)
 
 	// Create a client with our logger options.
 

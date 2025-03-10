@@ -11,17 +11,21 @@ import (
 
 type MongoLogger struct {
 	Logger
+	maxSize uint
 }
 
-func NewMongoLogger(logger Logger) *MongoLogger {
-	return &MongoLogger{Logger: logger}
+func NewMongoLogger(logger Logger, maxSize uint) *MongoLogger {
+	return &MongoLogger{
+		Logger:  logger,
+		maxSize: maxSize,
+	}
 }
 
 func (l MongoLogger) Options() *options.LoggerOptions {
 	return options.
 		Logger().
 		SetSink(l).
-		SetMaxDocumentLength(10240).
+		SetMaxDocumentLength(l.maxSize).
 		SetComponentLevel(options.LogComponentCommand, options.LogLevelDebug)
 }
 func (l MongoLogger) Info(level int, msg string, data ...interface{}) {
@@ -60,8 +64,12 @@ func (l MongoLogger) CommandMonitor() *event.CommandMonitor {
 			l.Logger.Info(`开始执行`, zap.Int64(`请求ID`, startedEvent.RequestID), zap.Any(`command`, startedEvent.Command.String()))
 		},
 		Succeeded: func(ctx context.Context, succeededEvent *event.CommandSucceededEvent) {
-			id := succeededEvent.RequestID
-			l.Logger.Info(`执行成功`, zap.Int64(`请求ID`, id), zap.Duration(`耗时`, succeededEvent.Duration), zap.Any(`result`, succeededEvent.Reply.String()))
+			var (
+				id       = succeededEvent.RequestID
+				duration = succeededEvent.Duration
+				result   = succeededEvent.Reply.String()
+			)
+			l.Logger.Info(`执行成功`, zap.Int64(`请求ID`, id), zap.Duration(`耗时`, duration), zap.Any(`result`, result))
 		},
 		Failed: func(ctx context.Context, failedEvent *event.CommandFailedEvent) {
 			id := failedEvent.RequestID

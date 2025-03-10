@@ -1,6 +1,106 @@
-config.go:56:2: confusing-naming: Field 'levelToPath' differs only by capitalization to other field in the struct type Config (revive)
-	levelToPath map[zapcore.Level]string
+config.go:47:2: confusing-naming: Field 'LevelToPath' differs only by capitalization to other field in the struct type Config (revive)
+	LevelToPath map[string]string `yaml:"levelToPath"`
 	^
-config.go:81:3: assignments should only be cuddled with other assignments (wsl)
-		l.levelToPath[level] = path
-		^
+config.go:131:1: cognitive-complexity: function (*Config).Build has cognitive complexity 13 (> max enabled 10) (revive)
+func (l *Config) Build(cores ...zapcore.Core) (logger Logger, err error) {
+	var (
+		underlyingLogger *zap.Logger
+		allCores         []zapcore.Core
+	)
+
+	if err = l.tidy(); err != nil {
+		return nil, errors.Wrap(err, `tidy`)
+	}
+
+	HiddenConsole = l.HideConsole
+	inputCores = cores
+
+	cfg := &zap.Config{
+		Level:            zap.NewAtomicLevelAt(l.Level),
+		Development:      true,               //nolint:govet // unusedwrite zap底层在用
+		Encoding:         "console",          //nolint:govet // unusedwrite zap底层在用
+		OutputPaths:      []string{"stderr"}, //nolint:govet // unusedwrite zap底层在用
+		ErrorOutputPaths: []string{"stderr"}, //nolint:govet // unusedwrite zap底层在用
+	}
+
+	if l.TimeZone == `` {
+		l.TimeZone = defaultTimeZone
+	}
+
+	if l.TimeLayout == `` {
+		l.TimeLayout = defaultTimeLayout
+	}
+
+	if l.location, err = time.LoadLocation(l.TimeZone); err != nil {
+		return nil, errors.Wrapf(err, `加载时区[%s]`, l.TimeZone)
+	}
+
+	// todo: 如何验证一个time layout 是否正确
+
+	cfg.EncoderConfig = l.newEncoderConfig()
+
+	if l.JSON {
+		encoder = zapcore.NewJSONEncoder(cfg.EncoderConfig)
+	} else {
+		encoder = zapcore.NewConsoleEncoder(cfg.EncoderConfig)
+	}
+
+	if l.FilePath != `` {
+		if l.Rotate == nil {
+			l.Rotate = &RotateConfig{}
+		}
+
+		lumberjackLogger := &lumberjack.Logger{
+			Filename:   l.FilePath + ".log",
+			MaxSize:    l.Rotate.MaxSize, // megabytes
+			MaxBackups: l.Rotate.MaxBackups,
+			MaxAge:     l.Rotate.MaxAge, // days
+			Compress:   !l.Rotate.DisableCompress,
+		}
+
+		fillLumberjack(lumberjackLogger)
+
+		writeSyncer = zapcore.NewMultiWriteSyncer(zapcore.AddSync(lumberjackLogger))
+
+		allCores = append(allCores, zapcore.NewCore(
+			encoder,
+			writeSyncer,
+			newLevelEnablerWithExcept(cfg.Level, l.levelToPath),
+		))
+	}
+
+	if l.levelToPath != nil {
+		for level := range l.levelToPath {
+			lumberjackLogger := &lumberjack.Logger{
+				Filename:   l.levelToPath[level],
+				MaxSize:    l.Rotate.MaxSize, // megabytes
+				MaxBackups: l.Rotate.MaxBackups,
+				MaxAge:     l.Rotate.MaxAge, // days
+				Compress:   true,
+			}
+
+			fillLumberjack(lumberjackLogger)
+
+			writeSyncer = zapcore.NewMultiWriteSyncer(zapcore.AddSync(lumberjackLogger))
+
+			allCores = append(allCores, zapcore.NewCore(encoder, writeSyncer, newLevelEnablerWithExcept(level, l.levelToPath, level)))
+		}
+	}
+
+	if !l.HideConsole {
+		allCores = append(allCores, zapcore.NewCore(encoder, os.Stdout, cfg.Level))
+	}
+
+	for i := range l.Hooks {
+		hook := l.Hooks[i]
+
+		allCores = append(allCores, zapcore.NewCore(encoder, zapcore.AddSync(hook.Writer()), hook.MinLevel()))
+	}
+
+	allCores = append(allCores, cores...)
+
+	core = zapcore.NewTee(allCores...)
+	underlyingLogger = zap.New(core, zap.AddCaller())
+
+	return newLogger(underlyingLogger.With(zap.String(`系统`, l.Service)), ``, 1, true, false, l.levelToPath, nil), nil
+}

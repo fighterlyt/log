@@ -62,12 +62,12 @@ func ensureDuplicateKeys(data *Exist) *Exist {
 
 // logger 日志器的实现
 type logger struct {
-	underlying    *zap.Logger              // 底层日志器
-	fields        []zapcore.Field          // 嵌套的字段
-	name          string                   // 对应的名称
-	skip          int                      // skip
-	levelToPath   map[zapcore.Level]string // 不同的级别分隔
-	duplicateKeys *Exist                   // 是否存在
+	underlying    *zap.Logger
+	levelToPath   map[zapcore.Level]string
+	duplicateKeys *Exist
+	name          string
+	fields        []zapcore.Field
+	skip          int
 }
 
 /*
@@ -145,8 +145,11 @@ func (l logger) WithWhenNotExist(key string, field zap.Field) Logger {
 		return &l
 	}
 
+	fields := make([]zap.Field, len(l.fields))
+	copy(fields, l.fields)
+
 	// 不存在就直接调用
-	fields := append(l.fields, field)
+	fields = append(fields, field)
 
 	duplicate := l.duplicateKeys.Copy()
 

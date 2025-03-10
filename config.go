@@ -42,20 +42,20 @@ type RotateConfig struct {
 
 // Config 日志器配置
 type Config struct {
-	Service     string            `yaml:"service"`     // 日志名称
-	Level       zapcore.Level     `yaml:"level"`       // 最低级别
-	FilePath    string            `yaml:"filePath"`    // 日志文件路径,如果为空，表示不输出，可以包含路径,最终生成一个FilePath.log.
-	TimeZone    string            `yaml:"timeZone"`    // 时区，默认defaultTimeZone,可以从https://www.zeitverschiebung.net/en/ 查询时区信息
-	TimeLayout  string            `yaml:"timeLayout"`  // 输出时间格式,默认为defaultTimeLayout,任何Go支持的格式都是合法的
-	Debug       bool              `yaml:"debug"`       // 是否调试，调试模式会输出完整的代码行信息,其他模式只会输出项目内部的代码行信息
-	Dev         bool              `yaml:"dev"`         // 开发模式，输出完整路径
-	JSON        bool              `yaml:"json"`        // 是否输出为一个完整的json,默认为false
-	HideConsole bool              `yaml:"hideConsole"` // 是否隐藏终端输出
-	Rotate      *RotateConfig     `yaml:"rotate"`      // 日志 rotate
-	location    *time.Location    `yaml:"location"`    // 输出time.Time时的时区
-	LevelToPath map[string]string `yaml:"levelToPath"`
+	Rotate      *RotateConfig `yaml:"rotate"`
 	levelToPath map[zapcore.Level]string
+	LevelToPath map[string]string `yaml:"levelToPath"`
+	location    *time.Location    `yaml:"location"`
+	TimeZone    string            `yaml:"timeZone"`
+	TimeLayout  string            `yaml:"timeLayout"`
+	Service     string            `yaml:"service"`
+	FilePath    string            `yaml:"filePath"`
 	Hooks       []Hook
+	Debug       bool          `yaml:"debug"`
+	Dev         bool          `yaml:"dev"`
+	JSON        bool          `yaml:"json"`
+	HideConsole bool          `yaml:"hideConsole"`
+	Level       zapcore.Level `yaml:"level"`
 }
 
 /*
@@ -143,10 +143,10 @@ func (l *Config) Build(cores ...zapcore.Core) (logger Logger, err error) {
 
 	cfg := &zap.Config{
 		Level:            zap.NewAtomicLevelAt(l.Level),
-		Development:      true,
-		Encoding:         "console",
-		OutputPaths:      []string{"stderr"},
-		ErrorOutputPaths: []string{"stderr"},
+		Development:      true,               //nolint:govet // unusedwrite zap底层在用
+		Encoding:         "console",          //nolint:govet // unusedwrite zap底层在用
+		OutputPaths:      []string{"stderr"}, //nolint:govet // unusedwrite zap底层在用
+		ErrorOutputPaths: []string{"stderr"}, //nolint:govet // unusedwrite zap底层在用
 	}
 
 	if l.TimeZone == `` {
@@ -299,7 +299,7 @@ func (l levelEnableWithExcept) Enabled(level zapcore.Level) bool {
 
 	return !l.except[level]
 }
-func newLevelEnablerWithExcept[T any](enabler zapcore.LevelEnabler, except map[zapcore.Level]T, exceptLevels ...zapcore.Level) levelEnableWithExcept {
+func newLevelEnablerWithExcept[T any](enabler zapcore.LevelEnabler, except map[zapcore.Level]T, exceptLevels ...zapcore.Level) levelEnableWithExcept { //nolint:lll
 	result := levelEnableWithExcept{
 		LevelEnabler: enabler,
 		except:       make(map[zapcore.Level]bool, len(except)),
