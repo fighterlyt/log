@@ -1,6 +1,3 @@
-config.go:47:2: confusing-naming: Field 'LevelToPath' differs only by capitalization to other field in the struct type Config (revive)
-	LevelToPath map[string]string `yaml:"levelToPath"`
-	^
 config.go:131:1: cognitive-complexity: function (*Config).Build has cognitive complexity 13 (> max enabled 10) (revive)
 func (l *Config) Build(cores ...zapcore.Core) (logger Logger, err error) {
 	var (
@@ -102,5 +99,8 @@ func (l *Config) Build(cores ...zapcore.Core) (logger Logger, err error) {
 	core = zapcore.NewTee(allCores...)
 	underlyingLogger = zap.New(core, zap.AddCaller())
 
-	return newLogger(underlyingLogger.With(zap.String(`系统`, l.Service)), ``, 1, true, false, l.levelToPath, nil), nil
+	return NewLogger(underlyingLogger.With(zap.String(`系统`, l.Service)), ``, 1, true, false, l.levelToPath, nil), nil
 }
+config.go:47:2: confusing-naming: Field 'LevelToPath' differs only by capitalization to other field in the struct type Config (revive)
+	LevelToPath map[string]string `yaml:"levelToPath"`
+	^

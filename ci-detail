@@ -1,0 +1,4 @@
+|linter|数量|
+|revive|2|
+|revive.cognitive-complexity|1|
+|revive.confusing-naming|1|

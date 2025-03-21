@@ -1,0 +1,224 @@
+linters-settings:
+  depguard:
+    list-type: blacklist
+    packages:
+    # logging is allowed only by logutils.Log, logrus
+    # is allowed to use only in logutils package
+    #      - github.com/sirupsen/logrus
+    packages-with-error-message:
+  #      - github.com/sirupsen/logrus: "logging is allowed only by logutils.Log"
+  dupl:
+    threshold: 100
+  funlen:
+    lines: 100
+    statements: 50
+  exhaustive:
+    # check switch statements in generated files also
+    check-generated: false
+    # indicates that switch statements are to be considered exhaustive if a
+    # 'default' case is present, even if all enum members aren't listed in the
+    # switch
+    default-signifies-exhaustive: true
+    ignore-enum-members: ".+None" # 忽略所有以None结尾的穷举
+  gci:
+    sections:
+      - prefix(github.com/golangci/golangci-lint)
+  stylecheck:
+    # STxxxx checks in https://staticcheck.io/docs/configuration/options/#checks
+    # Default: ["*"]
+    checks: [ "all", "-ST1005" ]
+    # https://staticcheck.io/docs/configuration/options/#dot_import_whitelist
+    # Default: ["github.com/mmcloughlin/avo/build", "github.com/mmcloughlin/avo/operand", "github.com/mmcloughlin/avo/reg"]
+    dot-import-whitelist:
+      - fmt
+    # https://staticcheck.io/docs/configuration/options/#initialisms
+    # Default: ["ACL", "API", "ASCII", "CPU", "CSS", "DNS", "EOF", "GUID", "HTML", "HTTP", "HTTPS", "ID", "IP", "JSON", "QPS", "RAM", "RPC", "SLA", "SMTP", "SQL", "SSH", "TCP", "TLS", "TTL", "UDP", "UI", "GID", "UID", "UUID", "URI", "URL", "UTF8", "VM", "XML", "XMPP", "XSRF", "XSS", "SIP", "RTP", "AMQP", "DB", "TS"]
+    initialisms: [ "ACL", "API", "ASCII", "CPU", "CSS", "DNS", "EOF", "GUID", "HTML", "HTTP", "HTTPS", "ID", "IP", "JSON", "QPS", "RAM", "RPC", "SLA", "SMTP", "SQL", "SSH", "TCP", "TLS", "TTL", "UDP", "UI", "GID", "UID", "UUID", "URI", "URL", "UTF8", "VM", "XML", "XMPP", "XSRF", "XSS", "SIP", "RTP", "AMQP", "DB", "TS" ]
+    # https://staticcheck.io/docs/configuration/options/#http_status_code_whitelist
+    # Default: ["200", "400", "404", "500"]
+    http-status-code-whitelist: [ "200", "400", "404", "500" ]
+  goconst:
+    min-len: 2
+    min-occurrences: 2
+  #  gocritic:
+  ##    enabled-tags:
+  ##      - diagnostic
+  ##      - experimental
+  ##      - opinionated
+  ##      - performance
+  ##      - style
+  #    disabled-checks:
+  #      - dupImport # https://github.com/go-critic/go-critic/issues/845
+  #      - ifElseChain
+  #      - octalLiteral
+  #      - whyNoLint
+  #      - wrapperFunc
+  #      - hugeParam
+  gocyclo:
+    min-complexity: 15
+  goimports:
+    local-prefixes: github.com/golangci/golangci-lint
+  revive:
+    # see https://github.com/mgechev/revive#available-rules for details.
+    ignore-generated-header: true
+    severity: warning
+    confidence: 0.8
+    error-code: 2
+    warning-code: 1
+    rules:
+      - name: indent-error-flow
+      #      - name: add-constant
+      #        arguments: [{maxLitCount = "3",allowStrs ="\"\"",allowInts="64",allowInts="0",allowInts="18",allowFloats="0.0"}]
+      - name: atomic
+      - name: bare-return
+      - name: blank-imports
+      - name: call-to-gc
+      - name: cognitive-complexity
+        arguments: [ 10 ]
+      - name: confusing-naming
+      - name: constant-logical-expr
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: cyclomatic
+        arguments: [ 10 ]
+      - name: deep-exit
+      - name: defer
+        arguments: [ [ "call-chain","loop","recover","return","method-call" ] ]
+      - name: dot-imports
+      - name: duplicated-imports
+      - name: early-return
+      - name: empty-block
+      - name: empty-lines
+      - name: error-naming
+      - name: error-return
+      - name: error-strings
+      - name: errorf
+      - name: exported
+      - name: function-result-limit
+        arguments: [ 4 ]
+      - name: function-length
+        arguments: [ 50,90 ]
+
+  mnd:
+    checks:
+      - argument
+      - case
+      - condition
+      - operation
+      - return
+      - assign
+    ignored-numbers:
+      - "0"
+      - "10"
+      - "100"
+      - "1e3"
+      - "1e6"
+      - "64"
+      - "60"
+  govet:
+    enable-all: true
+    settings:
+      printf:
+        funcs:
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Infof
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Warnf
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
+  lll:
+    line-length: 140
+  misspell:
+    locale: US
+  nolintlint:
+    allow-leading-space: true # don't require machine-readable nolint directives (i.e. with no leading space)
+    allow-unused: false # report any unused nolint directives
+    require-explanation: true # don't require an explanation for nolint directives
+    require-specific: false # don't require nolint directives to be specific about which linter is being skipped
+    allow-no-explanation: [ lll ]
+linters:
+  # please, do not use `enable-all`: it's deprecated and will be removed soon.
+  # inverted configuration with `enable-all` and `disable` is not scalable during updates of golangci-lint
+  disable-all: true
+  enable:
+    - bodyclose
+    - contextcheck
+    #    - depguard
+    - dogsled
+    - durationcheck
+    - dupl
+    - errcheck
+    - errchkjson
+    - copyloopvar
+    - errorlint
+    - exhaustive
+    - funlen
+    - gochecknoinits
+    - goconst
+    - gocritic
+    - gocyclo
+    - gofmt
+    - goimports
+    - revive
+    - mnd
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - lll
+    - misspell
+    - nakedret
+    - nilerr
+    - noctx
+    - nolintlint
+    - rowserrcheck
+    - staticcheck
+    - stylecheck
+    - typecheck
+    - reassign
+    - unconvert
+    - unparam
+    # - unused
+    - whitespace
+    - asasalint
+
+    # don't enable:
+    # - asciicheck
+    # - scopelint
+    # - gochecknoglobals
+    # - gocognit
+    # - godot
+    # - godox
+    # - goerr113
+    # - interfacer
+    # - maligned
+    # - nestif
+    # - prealloc
+    # - testpackage
+    # - revive
+    - wsl
+
+issues:
+  # Excluding configuration per-path, per-linter, per-text and per-source
+  exclude-rules:
+    - path: _test.go
+      linters:
+        - gomnd
+    - path: caller\/.*\.go
+      linters:
+        - dupl
+    # https://github.com/go-critic/go-critic/issues/926
+    - linters:
+        - gocritic
+      text: "unnecessaryDefer:"
+  exclude-dirs:
+    - test/testdata_etc
+    - internal/cache
+    - internal/renameio
+    - internal/robustio
+  exclude-files:
+    - ".*_back.go"  # 备用
+    - ".*_test.go"  # 测试
+    - ".*_import.go" # 导入
+    - ".*.pb.go" #
+    - ".*.pb.micro.go"
+  timeout: 5m
